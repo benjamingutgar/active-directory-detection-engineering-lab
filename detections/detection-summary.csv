@@ -1,0 +1,4 @@
+technique_id,technique_name,scenario,main_events,custom_rules,evidence_quality
+T1021.001,Remote Services: RDP,RDP lateral movement,"4624;4634;4647;4688","100001",Medium/High
+T1021.002,Remote Services: SMB/Windows Admin Shares,SMB/PsExec-like remote execution,"4624;4672;5145;7045;4688","100010;100011;100021",High
+T1550.002,Use Alternate Authentication Material: Pass the Hash,Pass-the-Hash and DCSync correlation,"4624;4672;4662;5145;4688","100011;100021;100030;100033",High
