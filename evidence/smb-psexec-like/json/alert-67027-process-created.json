@@ -1,0 +1,68 @@
+{
+  "_index": "wazuh-alerts-4.x-2026.06.16",
+  "_id": "REGISTRO_ANONIMIZADO_67027_SMB",
+  "_score": null,
+  "_source": {
+    "input": {
+      "type": "log"
+    },
+    "agent": {
+      "ip": "192.168.56.20",
+      "name": "DC01",
+      "id": "001"
+    },
+    "manager": {
+      "name": "wazuh-manager"
+    },
+    "data": {
+      "win": {
+        "eventdata": {
+          "subjectLogonId": "0xdd5d91",
+          "newProcessName": "C:\\Windows\\System32\\cmd.exe",
+          "targetLogonId": "0x0",
+          "parentProcessName": "C:\\Windows\\System32\\services.exe",
+          "subjectUserSid": "S-1-5-21-<SID_DOMAIN>-500",
+          "processId": "0xANONYMIZED",
+          "subjectDomainName": "LAB",
+          "tokenElevationType": "%%1936",
+          "targetUserSid": "S-1-0-0",
+          "newProcessId": "0xANONYMIZED",
+          "mandatoryLabel": "S-1-16-16384",
+          "subjectUserName": "<privileged_user>"
+        },
+        "system": {
+          "eventID": "4688",
+          "channel": "Security",
+          "computer": "DC01.lab.local",
+          "severityValue": "AUDIT_SUCCESS",
+          "providerName": "Microsoft-Windows-Security-Auditing",
+          "message": "A new process has been created. Account Name: <privileged_user>. Account Domain: LAB. New Process Name: C:\\Windows\\System32\\cmd.exe. Creator Process Name: C:\\Windows\\System32\\services.exe."
+        }
+      }
+    },
+    "rule": {
+      "firedtimes": 1,
+      "mail": false,
+      "level": 3,
+      "description": "A process was created.",
+      "groups": [
+        "windows",
+        "WEF"
+      ],
+      "id": "67027"
+    },
+    "location": "EventChannel",
+    "decoder": {
+      "name": "windows_eventchannel"
+    },
+    "timestamp": "2026-06-16T17:29:23.612+0000"
+  },
+  "fields": {
+    "timestamp": [
+      "2026-06-16T17:29:23.612Z"
+    ]
+  },
+  "sort": [
+    1781630963612
+  ]
+}
