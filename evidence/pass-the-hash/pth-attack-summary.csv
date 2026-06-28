@@ -1,0 +1,33 @@
+timestamp,agent.name,rule.description,rule.level,rule.id
+"Jun 16, 2026 @ 20:01:40.827",DC01,TFM - NTLM network logon observed: shared indicator for SMB/PsExec or Pass-the-Hash scenario,10,100011
+"Jun 16, 2026 @ 20:01:40.811",DC01,TFM - Controlled Pass the Hash chain: DCSync/secretsdump followed by privileged NTLM access (T1550.002 + T1003.006),15,100033
+"Jun 16, 2026 @ 20:01:40.732",DC01,TFM - NTLM network logon observed: shared indicator for SMB/PsExec or Pass-the-Hash scenario,10,100011
+"Jun 16, 2026 @ 20:01:40.707",DC01,TFM - Controlled Pass the Hash chain: DCSync/secretsdump followed by privileged NTLM access (T1550.002 + T1003.006),15,100033
+"Jun 16, 2026 @ 20:01:40.633",DC01,TFM - NTLM network logon observed: shared indicator for SMB/PsExec or Pass-the-Hash scenario,10,100011
+"Jun 16, 2026 @ 20:01:40.606",DC01,TFM - Controlled Pass the Hash chain: DCSync/secretsdump followed by privileged NTLM access (T1550.002 + T1003.006),15,100033
+"Jun 16, 2026 @ 20:01:40.470",DC01,TFM - NTLM network logon observed: shared indicator for SMB/PsExec or Pass-the-Hash scenario,10,100011
+"Jun 16, 2026 @ 20:01:40.439",DC01,TFM - Controlled Pass the Hash chain: DCSync/secretsdump followed by privileged NTLM access (T1550.002 + T1003.006),15,100033
+"Jun 16, 2026 @ 20:01:40.365",DC01,New Windows Service Created to start from windows root path. Suspicious event as the binary may have been dropped using Windows Admin Shares.,12,92650
+"Jun 16, 2026 @ 20:01:40.345",DC01,Windows command prompt started by an abnormal process,4,92052
+"Jun 16, 2026 @ 20:01:12.105",DC01,TFM - Possible DCSync/secretsdump activity: AD replication rights used by non-machine account (T1003.006),13,100030
+"Jun 16, 2026 @ 20:01:12.089",DC01,TFM - Possible DCSync/secretsdump activity: AD replication rights used by non-machine account (T1003.006),13,100030
+"Jun 16, 2026 @ 20:01:12.072",DC01,TFM - Possible DCSync/secretsdump activity: AD replication rights used by non-machine account (T1003.006),13,100030
+"Jun 16, 2026 @ 20:01:12.042",DC01,TFM - Possible DCSync/secretsdump activity: AD replication rights used by non-machine account (T1003.006),13,100030
+"Jun 16, 2026 @ 20:01:12.026",DC01,TFM - Possible DCSync/secretsdump activity: AD replication rights used by non-machine account (T1003.006),13,100030
+"Jun 16, 2026 @ 20:01:12.011",DC01,TFM - Possible DCSync/secretsdump activity: AD replication rights used by non-machine account (T1003.006),13,100030
+"Jun 16, 2026 @ 20:01:11.994",DC01,TFM - Possible DCSync/secretsdump activity: AD replication rights used by non-machine account (T1003.006),13,100030
+"Jun 16, 2026 @ 20:01:11.980",DC01,TFM - Possible DCSync/secretsdump activity: AD replication rights used by non-machine account (T1003.006),13,100030
+"Jun 16, 2026 @ 20:01:11.967",DC01,TFM - Possible DCSync/secretsdump activity: AD replication rights used by non-machine account (T1003.006),13,100030
+"Jun 16, 2026 @ 20:01:11.956",DC01,TFM - Possible DCSync/secretsdump activity: AD replication rights used by non-machine account (T1003.006),13,100030
+"Jun 16, 2026 @ 20:01:11.944",DC01,TFM - Possible DCSync/secretsdump activity: AD replication rights used by non-machine account (T1003.006),13,100030
+"Jun 16, 2026 @ 20:01:11.920",DC01,TFM - Possible DCSync/secretsdump activity: AD replication rights used by non-machine account (T1003.006),13,100030
+"Jun 16, 2026 @ 20:01:11.901",DC01,TFM - Possible DCSync/secretsdump activity: AD replication rights used by non-machine account (T1003.006),13,100030
+"Jun 16, 2026 @ 20:01:11.868",DC01,TFM - Possible DCSync/secretsdump activity: AD replication rights used by non-machine account (T1003.006),13,100030
+"Jun 16, 2026 @ 20:01:11.841",DC01,TFM - Possible DCSync/secretsdump activity: AD replication rights used by non-machine account (T1003.006),13,100030
+"Jun 16, 2026 @ 20:01:11.813",DC01,TFM - Possible DCSync/secretsdump activity: AD replication rights used by non-machine account (T1003.006),13,100030
+"Jun 16, 2026 @ 20:01:11.798",DC01,TFM - Possible DCSync/secretsdump activity: AD replication rights used by non-machine account (T1003.006),13,100030
+"Jun 16, 2026 @ 20:01:11.775",DC01,TFM - Possible DCSync/secretsdump activity: AD replication rights used by non-machine account (T1003.006),13,100030
+"Jun 16, 2026 @ 20:01:11.754",DC01,TFM - NTLM network logon observed: shared indicator for SMB/PsExec or Pass-the-Hash scenario,10,100011
+"Jun 16, 2026 @ 20:01:11.738",DC01,TFM - Special privileges assigned to privileged remote session: shared lateral movement indicator,12,100021
+"Jun 16, 2026 @ 20:01:11.709",DC01,TFM - NTLM network logon observed: shared indicator for SMB/PsExec or Pass-the-Hash scenario,10,100011
+"Jun 16, 2026 @ 20:01:11.704",DC01,TFM - Special privileges assigned to privileged remote session: shared lateral movement indicator,12,100021
