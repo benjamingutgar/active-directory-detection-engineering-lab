@@ -1,0 +1,76 @@
+{
+  "_index": "wazuh-alerts-4.x-2026.06.16",
+  "_id": "REGISTRO_ANONIMIZADO_92650_PTH",
+  "_score": null,
+  "_source": {
+    "input": {
+      "type": "log"
+    },
+    "agent": {
+      "ip": "192.168.56.20",
+      "name": "DC01",
+      "id": "001"
+    },
+    "manager": {
+      "name": "wazuh-manager"
+    },
+    "data": {
+      "win": {
+        "eventdata": {
+          "serviceType": "user mode service",
+          "accountName": "LocalSystem",
+          "imagePath": "%systemroot%\\<random_payload>.exe",
+          "startType": "demand start",
+          "serviceName": "<random_service>"
+        },
+        "system": {
+          "eventID": "7045",
+          "eventSourceName": "Service Control Manager",
+          "channel": "System",
+          "computer": "DC01.lab.local",
+          "severityValue": "INFORMATION",
+          "providerName": "Service Control Manager",
+          "message": "A service was installed in the system. Service Name: <random_service>. Service File Name: %systemroot%\\<random_payload>.exe. Service Type: user mode service. Service Start Type: demand start. Service Account: LocalSystem."
+        }
+      }
+    },
+    "rule": {
+      "firedtimes": 1,
+      "mail": true,
+      "level": 12,
+      "description": "New Windows Service Created to start from windows root path. Suspicious event as the binary may have been dropped using Windows Admin Shares.",
+      "groups": [
+        "win_evt_channel",
+        "windows"
+      ],
+      "mitre": {
+        "technique": [
+          "SMB/Windows Admin Shares",
+          "Service Execution"
+        ],
+        "id": [
+          "T1021.002",
+          "T1569.002"
+        ],
+        "tactic": [
+          "Lateral Movement",
+          "Execution"
+        ]
+      },
+      "id": "92650"
+    },
+    "location": "EventChannel",
+    "decoder": {
+      "name": "windows_eventchannel"
+    },
+    "timestamp": "2026-06-16T18:01:40.365+0000"
+  },
+  "fields": {
+    "timestamp": [
+      "2026-06-16T18:01:40.365Z"
+    ]
+  },
+  "sort": [
+    1781632900365
+  ]
+}
