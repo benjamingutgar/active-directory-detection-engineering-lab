@@ -495,12 +495,5 @@ See:
 
 **Benjamín Gerardo Gutiérrez García**
 
-Master's Final Project focused on:
-
-- SIEM deployment;
-- Windows telemetry;
-- Active Directory;
-- lateral movement detection;
-- Wazuh custom rules;
 - MITRE ATT&CK mapping;
 - Blue Team detection engineering.
