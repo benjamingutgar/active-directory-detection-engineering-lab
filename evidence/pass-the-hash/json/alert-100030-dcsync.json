@@ -1,0 +1,81 @@
+{
+  "_index": "wazuh-alerts-4.x-2026.06.16",
+  "_id": "REGISTRO_ANONIMIZADO_100030_PTH",
+  "_score": null,
+  "_source": {
+    "input": {
+      "type": "log"
+    },
+    "agent": {
+      "ip": "192.168.56.20",
+      "name": "DC01",
+      "id": "001"
+    },
+    "manager": {
+      "name": "wazuh-manager"
+    },
+    "data": {
+      "win": {
+        "eventdata": {
+          "subjectLogonId": "0xdd5dcb",
+          "subjectUserSid": "S-1-5-21-<SID_DOMAIN>-500",
+          "subjectDomainName": "LAB",
+          "objectServer": "DS",
+          "accessList": "%%7688",
+          "objectName": "%{DIRECTORY_OBJECT_ANONYMIZED}",
+          "operationType": "Object Access",
+          "accessMask": "0x100",
+          "handleId": "0x0",
+          "properties": "%%7688 {1131f6aa-9c07-11d1-f79f-00c04fc2dcd2} {19195a5b-6da0-11d0-afd3-00c04fd930c9}",
+          "subjectUserName": "<privileged_user>",
+          "objectType": "%{19195a5b-6da0-11d0-afd3-00c04fd930c9}"
+        },
+        "system": {
+          "eventID": "4662",
+          "channel": "Security",
+          "computer": "DC01.lab.local",
+          "severityValue": "AUDIT_SUCCESS",
+          "providerName": "Microsoft-Windows-Security-Auditing",
+          "message": "An operation was performed on an object. Account Name: <privileged_user>. Account Domain: LAB. Object Server: DS. Accesses: Control Access. Access Mask: 0x100. Properties: DS-Replication permissions."
+        }
+      }
+    },
+    "rule": {
+      "firedtimes": 1,
+      "mail": true,
+      "level": 13,
+      "description": "TFM - Possible DCSync/secretsdump activity: AD replication rights used by non-machine account (T1003.006)",
+      "groups": [
+        "tfm",
+        "lateral_movement",
+        "credential_access",
+        "dcsync"
+      ],
+      "mitre": {
+        "technique": [
+          "DCSync"
+        ],
+        "id": [
+          "T1003.006"
+        ],
+        "tactic": [
+          "Credential Access"
+        ]
+      },
+      "id": "100030"
+    },
+    "location": "EventChannel",
+    "decoder": {
+      "name": "windows_eventchannel"
+    },
+    "timestamp": "2026-06-16T18:01:11.775+0000"
+  },
+  "fields": {
+    "timestamp": [
+      "2026-06-16T18:01:11.775Z"
+    ]
+  },
+  "sort": [
+    1781632871775
+  ]
+}
