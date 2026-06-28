@@ -1,0 +1,47 @@
+# Virtual machines
+*.ova
+*.ovf
+*.vdi
+*.vmdk
+*.vbox
+*.iso
+
+# Compressed files
+*.zip
+*.rar
+*.7z
+*.tar
+*.gz
+
+# Raw logs and captures
+*.evtx
+*.pcap
+*.pcapng
+*.log
+
+# Secrets and credentials
+.env
+*.key
+*.pem
+*.pfx
+*.p12
+credentials.*
+passwords.*
+secrets.*
+hashes.*
+ntlm.*
+*.kirbi
+*.ccache
+
+# Office temporary files
+~$*
+Thumbs.db
+desktop.ini
+
+# Private material
+private/
+drafts/
+raw-evidence/
+raw-logs/
+vm-export/
+evidence-original/
