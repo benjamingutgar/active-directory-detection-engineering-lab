@@ -1,0 +1,56 @@
+# T1550.002 - Pass the Hash Detection
+
+## Technique Overview
+
+Pass the Hash is a credential-based technique where an attacker authenticates remotely using NTLM authentication material instead of the clear-text password. From a defensive perspective, the SIEM does not directly observe the hash being reused. Instead, it observes the effects produced by that authentication flow: NTLM network logons, privileged sessions, access to administrative resources and, in this laboratory, DCSync-related directory replication activity.
+
+## Detection Objective
+
+The objective of this detection is to identify behavior compatible with credential-based lateral movement in a Windows Active Directory environment. The detection does not rely on the name of a specific offensive tool, but on the sequence of observable Windows events produced during the scenario.
+
+## Lab Scenario
+
+The scenario was executed in a controlled virtual laboratory composed of a Wazuh server, a domain controller, a Windows workstation and a Kali Linux host used as the attack simulation machine.
+
+The target system was DC01, the domain controller. The attack simulation generated NTLM-based remote authentication and privileged activity against the domain environment.
+
+## Telemetry Used
+
+The detection uses the following telemetry sources:
+
+| Source           | Event ID | Purpose                                                             |
+| ---------------- | -------: | ------------------------------------------------------------------- |
+| Windows Security |     4624 | Successful NTLM network logon                                       |
+| Windows Security |     4672 | Special privileges assigned to a new logon                          |
+| Windows Security |     4662 | Directory Service object access / replication-related evidence      |
+| Wazuh            |   100011 | NTLM network logon indicator                                        |
+| Wazuh            |   100021 | Privileged session indicator                                        |
+| Wazuh            |   100030 | DCSync-like activity                                                |
+| Wazuh            |   100033 | Correlation between DCSync-like activity and privileged NTLM access |
+
+## Detection Hypothesis
+
+If a privileged account authenticates remotely using NTLM and this activity is followed or accompanied by directory replication access, then the sequence is compatible with Pass the Hash activity combined with credential access behavior.
+
+This hypothesis is stronger than detecting a single NTLM logon because NTLM authentication alone may appear in legitimate administrative activity. The detection becomes more relevant when correlated with privileged logon context and DCSync-like evidence.
+
+## Wazuh Detection Logic
+
+The detection is based on a layered approach:
+
+1. Rule `100011` identifies NTLM network logon activity.
+2. Rule `100021` identifies privileged logon context.
+3. Rule `100030` identifies DCSync-like activity based on directory replication access.
+4. Rule `100033` correlates DCSync-like activity with privileged NTLM access inside a defined time window.
+
+## Evidence Observed
+
+The scenario generated a sequence of alerts involving NTLM authentication, special privileges and DCSync-related access. The strongest alert was rule `100033`, which correlated credential access evidence with privileged NTLM activity.
+
+## Analyst Interpretation
+
+A single NTLM logon should be treated as a weak or medium signal because it can appear in normal Windows administration. However, NTLM authentication combined with privileged access and directory replication activity represents a much stronger indicator of suspicious credential-based lateral movement.
+
+## Limitations
+
+This detection was validated in a controlled laboratory environment. In a production network, false positives would depend on legitimate administrative workflows, backup tools, identity management systems and domain replication behavior. Additional baselining would be required before deploying this logic in production.
