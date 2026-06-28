@@ -51,6 +51,22 @@ The scenario generated a sequence of alerts involving NTLM authentication, speci
 
 A single NTLM logon should be treated as a weak or medium signal because it can appear in normal Windows administration. However, NTLM authentication combined with privileged access and directory replication activity represents a much stronger indicator of suspicious credential-based lateral movement.
 
+## Related Scenario Material
+
+- [Execution notes](../scenarios/pass-the-hash/execution.md)
+- [Wazuh filter](../scenarios/pass-the-hash/wazuh-filter.kql)
+- [Timeline](../scenarios/pass-the-hash/timeline.md)
+
+## Related Evidence
+
+- [Pass-the-Hash attack summary](../evidence/pass-the-hash/pth-attack-summary.csv)
+- [Alert 100030 - DCSync-like activity](../evidence/pass-the-hash/json/alert-100030-dcsync.json)
+- [Alert 100033 - Pass-the-Hash correlation](../evidence/pass-the-hash/json/alert-100033-pth-correlation.json)
+- [Alert 100011 - NTLM network logon](../evidence/pass-the-hash/json/alert-100011-ntlm-logon.json)
+- [Alert 92650 - Remote service creation](../evidence/pass-the-hash/json/alert-92650-service-creation.json)
+- [Alert 92052 - Abnormal cmd.exe execution](../evidence/pass-the-hash/json/alert-92052-cmd-abnormal-process.json)
+- [Alert 100021 - Special privileges](../evidence/pass-the-hash/json/alert-100021-special-privileges.json)
+
 ## Limitations
 
 This detection was validated in a controlled laboratory environment. In a production network, false positives would depend on legitimate administrative workflows, backup tools, identity management systems and domain replication behavior. Additional baselining would be required before deploying this logic in production.
