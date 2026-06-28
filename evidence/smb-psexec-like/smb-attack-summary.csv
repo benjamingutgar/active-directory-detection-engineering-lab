@@ -1,0 +1,15 @@
+timestamp,agent.name,rule.description,rule.level,rule.id
+"Jun 16, 2026 @ 19:29:23.612",DC01,A process was created.,3,67027
+"Jun 16, 2026 @ 19:29:23.366",DC01,A process was created.,3,67027
+"Jun 16, 2026 @ 19:29:23.328",DC01,A process was created.,3,67027
+"Jun 16, 2026 @ 19:29:23.314",DC01,TFM - NTLM network logon observed: shared indicator for SMB/PsExec or Pass-the-Hash scenario,10,100011
+"Jun 16, 2026 @ 19:29:23.307",DC01,TFM - Special privileges assigned to privileged remote session: shared lateral movement indicator,12,100021
+"Jun 16, 2026 @ 19:29:22.488",DC01,TFM - NTLM network logon observed: shared indicator for SMB/PsExec or Pass-the-Hash scenario,10,100011
+"Jun 16, 2026 @ 19:29:22.478",DC01,TFM - Special privileges assigned to privileged remote session: shared lateral movement indicator,12,100021
+"Jun 16, 2026 @ 19:29:22.436",DC01,TFM - NTLM network logon observed: shared indicator for SMB/PsExec or Pass-the-Hash scenario,10,100011
+"Jun 16, 2026 @ 19:29:22.421",DC01,TFM - Special privileges assigned to privileged remote session: shared lateral movement indicator,12,100021
+"Jun 16, 2026 @ 19:29:22.392",DC01,TFM - NTLM network logon observed: shared indicator for SMB/PsExec or Pass-the-Hash scenario,10,100011
+"Jun 16, 2026 @ 19:29:22.377",DC01,TFM - Special privileges assigned to privileged remote session: shared lateral movement indicator,12,100021
+"Jun 16, 2026 @ 19:29:22.322",DC01,TFM - NTLM network logon observed: shared indicator for SMB/PsExec or Pass-the-Hash scenario,10,100011
+"Jun 16, 2026 @ 19:29:22.307",DC01,TFM - Special privileges assigned to privileged remote session: shared lateral movement indicator,12,100021
+"Jun 16, 2026 @ 19:29:22.285",DC01,TFM - NTLM network logon observed: shared indicator for SMB/PsExec or Pass-the-Hash scenario,10,100011
