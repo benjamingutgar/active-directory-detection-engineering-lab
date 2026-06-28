@@ -1,0 +1,68 @@
+{
+  "_index": "wazuh-alerts-4.x-2026.06.17",
+  "_id": "REGISTRO_ANONIMIZADO_67027_RDP",
+  "_score": null,
+  "_source": {
+    "input": {
+      "type": "log"
+    },
+    "agent": {
+      "ip": "192.168.56.30",
+      "name": "WS01",
+      "id": "002"
+    },
+    "manager": {
+      "name": "wazuh-manager"
+    },
+    "data": {
+      "win": {
+        "eventdata": {
+          "subjectLogonId": "0x11afcad",
+          "newProcessName": "C:\\Windows\\System32\\whoami.exe",
+          "targetLogonId": "0x0",
+          "parentProcessName": "C:\\Windows\\System32\\cmd.exe",
+          "subjectUserSid": "S-1-5-21-<SID_DOMAIN>-1104",
+          "processId": "0x3594",
+          "subjectDomainName": "LAB",
+          "tokenElevationType": "%%1936",
+          "targetUserSid": "S-1-0-0",
+          "newProcessId": "0x36bc",
+          "mandatoryLabel": "S-1-16-8192",
+          "subjectUserName": "<standard_user>"
+        },
+        "system": {
+          "eventID": "4688",
+          "channel": "Security",
+          "computer": "WS01.lab.local",
+          "severityValue": "AUDIT_SUCCESS",
+          "providerName": "Microsoft-Windows-Security-Auditing",
+          "message": "A new process has been created. Account Name: <standard_user>. Account Domain: LAB. New Process Name: C:\\Windows\\System32\\whoami.exe. Creator Process Name: C:\\Windows\\System32\\cmd.exe."
+        }
+      }
+    },
+    "rule": {
+      "firedtimes": 17,
+      "mail": false,
+      "level": 3,
+      "description": "A process was created.",
+      "groups": [
+        "windows",
+        "WEF"
+      ],
+      "id": "67027"
+    },
+    "location": "EventChannel",
+    "decoder": {
+      "name": "windows_eventchannel"
+    },
+    "timestamp": "2026-06-17T15:03:51.990+0000"
+  },
+  "fields": {
+    "timestamp": [
+      "2026-06-17T15:03:51.990Z"
+    ]
+  },
+  "sort": [
+    1781708631990
+  ]
+}
