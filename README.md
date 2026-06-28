@@ -72,6 +72,23 @@ The detection logic uses the following telemetry sources:
 | `/evidence` | Anonymized event samples |
 | `/dashboards` | Dashboard screenshots and reporting notes |
 
+## Repository Walkthrough
+
+The repository can be read in the following order:
+
+1. Review the lab architecture in [`docs/lab-architecture.md`](docs/lab-architecture.md).
+2. Review the deployment notes in [`docs/deployment-notes.md`](docs/deployment-notes.md).
+3. Review the telemetry configuration:
+   - [`docs/windows-audit-policy.md`](docs/windows-audit-policy.md)
+   - [`docs/sysmon-configuration.md`](docs/sysmon-configuration.md)
+   - [`docs/wazuh-sysmon-collection.md`](docs/wazuh-sysmon-collection.md)
+4. Review the custom Wazuh rules:
+   - [`wazuh/rules/local_rules.xml`](wazuh/rules/local_rules.xml)
+   - [`wazuh/rules/rules-explanation.md`](wazuh/rules/rules-explanation.md)
+5. Read the detection write-ups in [`detections/`](detections/).
+6. Review the scenario execution notes in [`scenarios/`](scenarios/).
+7. Review anonymized evidence in [`evidence/`](evidence/).
+
 ## Results Summary
 
 The laboratory demonstrated that a local Wazuh deployment can detect relevant lateral movement indicators by correlating Windows event logs, Sysmon telemetry and custom SIEM rules.
