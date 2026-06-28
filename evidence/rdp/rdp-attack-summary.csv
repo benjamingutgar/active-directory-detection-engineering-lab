@@ -1,0 +1,7 @@
+timestamp,agent.name,rule.description,rule.level,rule.id
+"Jun 17, 2026 @ 17:04:03.158",WS01,A process was created.,3,67027
+"Jun 17, 2026 @ 17:03:56.356",WS01,A process was created.,3,67027
+"Jun 17, 2026 @ 17:03:51.990",WS01,A process was created.,3,67027
+"Jun 17, 2026 @ 17:03:43.243",WS01,A process was created.,3,67027
+"Jun 17, 2026 @ 16:55:08.052",WS01,Windows command prompt started by an abnormal process,4,92052
+"Jun 17, 2026 @ 16:53:31.302",WS01,TFM - Post-access process execution after RDP session (T1021.001 context),10,100001
