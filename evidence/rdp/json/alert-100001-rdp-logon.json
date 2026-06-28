@@ -1,0 +1,92 @@
+{
+  "_index": "wazuh-alerts-4.x-2026.06.17",
+  "_id": "REGISTRO_ANONIMIZADO_100001_RDP",
+  "_score": null,
+  "_source": {
+    "input": {
+      "type": "log"
+    },
+    "agent": {
+      "ip": "192.168.56.30",
+      "name": "WS01",
+      "id": "002"
+    },
+    "manager": {
+      "name": "wazuh-manager"
+    },
+    "data": {
+      "win": {
+        "eventdata": {
+          "subjectLogonId": "0x3e7",
+          "restrictedAdminMode": "%%1843",
+          "subjectDomainName": "LAB",
+          "targetLinkedLogonId": "0x0",
+          "impersonationLevel": "%%1833",
+          "ipAddress": "192.168.56.40",
+          "authenticationPackageName": "Negotiate",
+          "workstationName": "WS01",
+          "targetLogonId": "0x11afcad",
+          "logonProcessName": "User32",
+          "logonGuid": "{GUID_ANONYMIZED}",
+          "targetUserName": "<standard_user>",
+          "keyLength": "0",
+          "elevatedToken": "%%1843",
+          "subjectUserSid": "S-1-5-18",
+          "processId": "0x200",
+          "processName": "C:\\Windows\\System32\\svchost.exe",
+          "ipPort": "0",
+          "targetDomainName": "LAB",
+          "targetUserSid": "S-1-5-21-<SID_DOMAIN>-1104",
+          "virtualAccount": "%%1843",
+          "logonType": "10",
+          "subjectUserName": "WS01$"
+        },
+        "system": {
+          "eventID": "4624",
+          "channel": "Security",
+          "computer": "WS01.lab.local",
+          "severityValue": "AUDIT_SUCCESS",
+          "providerName": "Microsoft-Windows-Security-Auditing",
+          "message": "An account was successfully logged on. Logon Type: 10. Account Name: <standard_user>. Account Domain: LAB. Source Network Address: 192.168.56.40. Authentication Package: Negotiate."
+        }
+      }
+    },
+    "rule": {
+      "firedtimes": 1,
+      "mail": false,
+      "level": 10,
+      "description": "TFM - Post-access process execution after RDP session (T1021.001 context)",
+      "groups": [
+        "tfm",
+        "lateral_movement",
+        "rdp",
+        "post_access"
+      ],
+      "mitre": {
+        "technique": [
+          "Remote Desktop Protocol"
+        ],
+        "id": [
+          "T1021.001"
+        ],
+        "tactic": [
+          "Lateral Movement"
+        ]
+      },
+      "id": "100001"
+    },
+    "location": "EventChannel",
+    "decoder": {
+      "name": "windows_eventchannel"
+    },
+    "timestamp": "2026-06-17T14:53:31.302+0000"
+  },
+  "fields": {
+    "timestamp": [
+      "2026-06-17T14:53:31.302Z"
+    ]
+  },
+  "sort": [
+    1781708011302
+  ]
+}
