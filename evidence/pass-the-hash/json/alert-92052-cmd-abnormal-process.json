@@ -1,0 +1,82 @@
+{
+  "_index": "wazuh-alerts-4.x-2026.06.16",
+  "_id": "REGISTRO_ANONIMIZADO_92052_PTH",
+  "_score": null,
+  "_source": {
+    "input": {
+      "type": "log"
+    },
+    "agent": {
+      "ip": "192.168.56.20",
+      "name": "DC01",
+      "id": "001"
+    },
+    "manager": {
+      "name": "wazuh-manager"
+    },
+    "data": {
+      "win": {
+        "eventdata": {
+          "originalFileName": "Cmd.Exe",
+          "image": "C:\\Windows\\SysWOW64\\cmd.exe",
+          "product": "Microsoft Windows Operating System",
+          "description": "Windows Command Processor",
+          "parentCommandLine": "C:\\Windows\\<random_payload>.exe",
+          "currentDirectory": "C:\\Windows\\system32\\",
+          "utcTime": "2026-06-16 18:01:23.009",
+          "parentImage": "C:\\Windows\\<random_payload>.exe",
+          "company": "Microsoft Corporation",
+          "commandLine": "cmd.exe",
+          "integrityLevel": "System",
+          "user": "NT AUTHORITY\\SYSTEM",
+          "terminalSessionId": "0",
+          "parentUser": "NT AUTHORITY\\SYSTEM"
+        },
+        "system": {
+          "eventID": "1",
+          "channel": "Microsoft-Windows-Sysmon/Operational",
+          "computer": "DC01.lab.local",
+          "severityValue": "INFORMATION",
+          "providerName": "Microsoft-Windows-Sysmon",
+          "message": "Process Create. Image: C:\\Windows\\SysWOW64\\cmd.exe. CommandLine: cmd.exe. User: NT AUTHORITY\\SYSTEM. ParentImage: C:\\Windows\\<random_payload>.exe. ParentUser: NT AUTHORITY\\SYSTEM."
+        }
+      }
+    },
+    "rule": {
+      "firedtimes": 1,
+      "mail": false,
+      "level": 4,
+      "description": "Windows command prompt started by an abnormal process",
+      "groups": [
+        "sysmon",
+        "sysmon_eid1_detections",
+        "windows"
+      ],
+      "mitre": {
+        "technique": [
+          "Windows Command Shell"
+        ],
+        "id": [
+          "T1059.003"
+        ],
+        "tactic": [
+          "Execution"
+        ]
+      },
+      "id": "92052"
+    },
+    "location": "EventChannel",
+    "decoder": {
+      "name": "windows_eventchannel"
+    },
+    "timestamp": "2026-06-16T18:01:40.345+0000"
+  },
+  "fields": {
+    "timestamp": [
+      "2026-06-16T18:01:40.345Z"
+    ]
+  },
+  "sort": [
+    1781632900345
+  ]
+}
