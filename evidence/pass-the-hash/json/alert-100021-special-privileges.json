@@ -1,0 +1,80 @@
+{
+  "_index": "wazuh-alerts-4.x-2026.06.16",
+  "_id": "REGISTRO_ANONIMIZADO_100021_PTH",
+  "_score": null,
+  "_source": {
+    "input": {
+      "type": "log"
+    },
+    "agent": {
+      "ip": "192.168.56.20",
+      "name": "DC01",
+      "id": "001"
+    },
+    "manager": {
+      "name": "wazuh-manager"
+    },
+    "data": {
+      "win": {
+        "eventdata": {
+          "subjectLogonId": "0xdd5d91",
+          "subjectUserSid": "S-1-5-21-<SID_DOMAIN>-500",
+          "subjectDomainName": "LAB",
+          "privilegeList": "SeSecurityPrivilege SeBackupPrivilege SeRestorePrivilege SeTakeOwnershipPrivilege SeDebugPrivilege SeSystemEnvironmentPrivilege SeLoadDriverPrivilege SeImpersonatePrivilege SeDelegateSessionUserImpersonatePrivilege SeEnableDelegationPrivilege",
+          "subjectUserName": "<privileged_user>"
+        },
+        "system": {
+          "eventID": "4672",
+          "channel": "Security",
+          "computer": "DC01.lab.local",
+          "severityValue": "AUDIT_SUCCESS",
+          "providerName": "Microsoft-Windows-Security-Auditing",
+          "message": "Special privileges assigned to new logon. Account Name: <privileged_user>. Account Domain: LAB. Privileges: SeSecurityPrivilege, SeBackupPrivilege, SeRestorePrivilege, SeTakeOwnershipPrivilege, SeDebugPrivilege, SeSystemEnvironmentPrivilege, SeLoadDriverPrivilege, SeImpersonatePrivilege, SeDelegateSessionUserImpersonatePrivilege, SeEnableDelegationPrivilege."
+        }
+      }
+    },
+    "rule": {
+      "firedtimes": 6,
+      "mail": true,
+      "level": 12,
+      "description": "TFM - Special privileges assigned to privileged remote session: shared lateral movement indicator",
+      "groups": [
+        "tfm",
+        "lateral_movement",
+        "privileged_access",
+        "shared_indicator"
+      ],
+      "mitre": {
+        "technique": [
+          "Valid Accounts",
+          "Pass the Hash"
+        ],
+        "id": [
+          "T1078",
+          "T1550.002"
+        ],
+        "tactic": [
+          "Defense Evasion",
+          "Persistence",
+          "Privilege Escalation",
+          "Initial Access",
+          "Lateral Movement"
+        ]
+      },
+      "id": "100021"
+    },
+    "location": "EventChannel",
+    "decoder": {
+      "name": "windows_eventchannel"
+    },
+    "timestamp": "2026-06-16T18:01:11.704+0000"
+  },
+  "fields": {
+    "timestamp": [
+      "2026-06-16T18:01:11.704Z"
+    ]
+  },
+  "sort": [
+    1781632871704
+  ]
+}
