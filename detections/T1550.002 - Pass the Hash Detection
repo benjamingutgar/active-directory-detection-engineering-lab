@@ -1,72 +1,580 @@
-# T1550.002 - Pass the Hash Detection
+# T1550.002 — Pass-the-Hash / DCSync Correlation Detection
 
-## Technique Overview
+This write-up explains the detection logic for the **Pass-the-Hash / DCSync correlation scenario**.
 
-Pass the Hash is a credential-based technique where an attacker authenticates remotely using NTLM authentication material instead of the clear-text password. From a defensive perspective, the SIEM does not directly observe the hash being reused. Instead, it observes the effects produced by that authentication flow: NTLM network logons, privileged sessions, access to administrative resources and, in this laboratory, DCSync-related directory replication activity.
+It covers two detection hypotheses:
 
-## Detection Objective
+| Hypothesis | Meaning |
+|---|---|
+| **H6** | Privileged NTLM network authentication compatible with credential reuse |
+| **H7** | DCSync-like activity correlated with privileged access |
 
-The objective of this detection is to identify behavior compatible with credential-based lateral movement in a Windows Active Directory environment. The detection does not rely on the name of a specific offensive tool, but on the sequence of observable Windows events produced during the scenario.
+The global hypothesis model is documented in [`detection-hypotheses.md`](detection-hypotheses.md), but this file is designed to be readable on its own.
 
-## Lab Scenario
+---
 
-The scenario was executed in a controlled virtual laboratory composed of a Wazuh server, a domain controller, a Windows workstation and a Kali Linux host used as the attack simulation machine.
+## 1. Technique Overview
 
-The target system was DC01, the domain controller. The attack simulation generated NTLM-based remote authentication and privileged activity against the domain environment.
+**Pass-the-Hash** is a credential-based technique where an attacker reuses NTLM hash material to authenticate remotely without knowing the plaintext password.
 
-## Telemetry Used
+In Windows environments, this is relevant because NTLM authentication can allow access based on cryptographic material derived from the password.
 
-The detection uses the following telemetry sources:
+From a detection perspective, the SIEM does not directly see the hash.
 
-| Source           | Event ID | Purpose                                                             |
-| ---------------- | -------: | ------------------------------------------------------------------- |
-| Windows Security |     4624 | Successful NTLM network logon                                       |
-| Windows Security |     4672 | Special privileges assigned to a new logon                          |
-| Windows Security |     4662 | Directory Service object access / replication-related evidence      |
-| Wazuh            |   100011 | NTLM network logon indicator                                        |
-| Wazuh            |   100021 | Privileged session indicator                                        |
-| Wazuh            |   100030 | DCSync-like activity                                                |
-| Wazuh            |   100033 | Correlation between DCSync-like activity and privileged NTLM access |
+The SIEM sees effects such as:
 
-## Detection Hypothesis
+- NTLM network authentication;
+- privileged logon context;
+- administrative access;
+- remote service creation;
+- command execution;
+- DCSync-like activity.
 
-If a privileged account authenticates remotely using NTLM and this activity is followed or accompanied by directory replication access, then the sequence is compatible with Pass the Hash activity combined with credential access behavior.
+This distinction is essential.
 
-This hypothesis is stronger than detecting a single NTLM logon because NTLM authentication alone may appear in legitimate administrative activity. The detection becomes more relevant when correlated with privileged logon context and DCSync-like evidence.
+The repository should not claim:
 
-## Wazuh Detection Logic
+```text
+Wazuh directly detected the hash.
+```
 
-The detection is based on a layered approach:
+The correct claim is:
 
-1. Rule `100011` identifies NTLM network logon activity.
-2. Rule `100021` identifies privileged logon context.
-3. Rule `100030` identifies DCSync-like activity based on directory replication access.
-4. Rule `100033` correlates DCSync-like activity with privileged NTLM access inside a defined time window.
+```text
+Wazuh detected a chain of behavior compatible with Pass-the-Hash in the controlled laboratory context.
+```
 
-## Evidence Observed
+---
 
-The scenario generated a sequence of alerts involving NTLM authentication, special privileges and DCSync-related access. The strongest alert was rule `100033`, which correlated credential access evidence with privileged NTLM activity.
+## 2. Detection Objective
 
-## Analyst Interpretation
+The objective is to detect a controlled Pass-the-Hash-related chain in a Windows Active Directory laboratory.
 
-A single NTLM logon should be treated as a weak or medium signal because it can appear in normal Windows administration. However, NTLM authentication combined with privileged access and directory replication activity represents a much stronger indicator of suspicious credential-based lateral movement.
+The detection focuses on two linked ideas:
 
-## Related Scenario Material
+```text
+H6 — privileged NTLM network authentication
+        ↓
+H7 — DCSync-like activity correlated with privileged access
+```
 
-- [Execution notes](../scenarios/pass-the-hash/execution.md)
-- [Wazuh filter](../scenarios/pass-the-hash/wazuh-filter.kql)
-- [Timeline](../scenarios/pass-the-hash/timeline.md)
+The strongest detection is not the first NTLM logon.
 
-## Related Evidence
+The strongest detection is the correlation between DCSync-like evidence and privileged access.
 
-- [Pass-the-Hash attack summary](../evidence/pass-the-hash/pth-attack-summary.csv)
-- [Alert 100030 - DCSync-like activity](../evidence/pass-the-hash/json/alert-100030-dcsync.json)
-- [Alert 100033 - Pass-the-Hash correlation](../evidence/pass-the-hash/json/alert-100033-pth-correlation.json)
-- [Alert 100011 - NTLM network logon](../evidence/pass-the-hash/json/alert-100011-ntlm-logon.json)
-- [Alert 92650 - Remote service creation](../evidence/pass-the-hash/json/alert-92650-service-creation.json)
-- [Alert 92052 - Abnormal cmd.exe execution](../evidence/pass-the-hash/json/alert-92052-cmd-abnormal-process.json)
-- [Alert 100021 - Special privileges](../evidence/pass-the-hash/json/alert-100021-special-privileges.json)
+---
 
-## Limitations
+## 3. Lab Scenario
 
-This detection was validated in a controlled laboratory environment. In a production network, false positives would depend on legitimate administrative workflows, backup tools, identity management systems and domain replication behavior. Additional baselining would be required before deploying this logic in production.
+| Field | Value |
+|---|---|
+| Source host | `Kali-ATK01` |
+| Source IP | `192.168.56.40` |
+| Target host | `DC01` |
+| Target IP | `192.168.56.20` |
+| Domain | `lab.local` |
+| Main technique | `T1550.002 — Use Alternate Authentication Material: Pass the Hash` |
+| Related technique | `T1003.006 — OS Credential Dumping: DCSync` |
+| Main asset | Domain Controller |
+| Main hypotheses | `H6`, `H7` |
+
+The target is `DC01`, the domain controller. This makes the scenario especially sensitive because the activity affects the core authentication system of the lab.
+
+---
+
+## 4. Execution Summary
+
+The controlled scenario followed this logic:
+
+```text
+credential material extraction → NTLM hash reuse → privileged remote authentication → remote activity on DC01
+```
+
+Example credential extraction structure:
+
+```bash
+impacket-secretsdump 'LAB/<privileged_user>:<PASSWORD>@192.168.56.30'
+```
+
+Example Pass-the-Hash structure:
+
+```bash
+impacket-psexec -hashes :<NTLM_HASH> LAB/<privileged_user>@192.168.56.20
+```
+
+All credentials and hashes are placeholders.
+
+The public repository must not include:
+
+- real passwords;
+- real NTLM hashes;
+- raw credential material;
+- unredacted secretsdump output;
+- private raw logs containing sensitive data.
+
+---
+
+## 5. Telemetry Used
+
+| Source | Event ID / Rule | Purpose |
+|---|---:|---|
+| Windows Security | `4624` | Successful network logon |
+| Windows Security | `4672` | Special privileges assigned to a new logon |
+| Windows Security | `4662` | Directory Service object access / DCSync-related evidence |
+| Windows Security | `5145` | Administrative share access |
+| Windows System | `7045` | Remote service creation |
+| Windows Security / Sysmon | `4688` / Sysmon Event ID `1` | Process execution |
+| Wazuh custom rule | `100011` | NTLM network logon indicator |
+| Wazuh custom rule | `100021` | Privileged session indicator |
+| Wazuh custom rule | `100030` | DCSync / secretsdump-like activity |
+| Wazuh custom rule | `100033` | Critical Pass-the-Hash / DCSync correlation |
+| Wazuh native rule | `92650` | Suspicious service creation |
+| Wazuh native rule | `92052` | Abnormal command execution |
+
+---
+
+# 6. H6 — NTLM Network Authentication Compatible with Pass-the-Hash
+
+## 6.1 What H6 Tries to Prove
+
+**H6** tries to prove that `DC01` received NTLM network authentication from the controlled attacker host and that the authenticated account received special privileges.
+
+In natural language:
+
+> **If `DC01` records NTLM network authentication from `192.168.56.40` and the account receives special privileges, then there is a signal compatible with credential-based lateral movement and possible Pass-the-Hash activity.**
+
+## 6.2 Expected NTLM Indicators
+
+| Field | Expected Value |
+|---|---|
+| `agent.name` | `DC01` |
+| `data.win.system.eventID` | `4624` |
+| `data.win.eventdata.logonType` | `3` |
+| `data.win.eventdata.authenticationPackageName` | `NTLM` |
+| `data.win.eventdata.ipAddress` | `192.168.56.40` |
+| `data.win.eventdata.targetUserName` | `<privileged_user>` |
+| `rule.id` | `100011` |
+| `rule.mitre.id` | `T1021.002`, `T1550.002` |
+
+## 6.3 Expected Privilege Indicators
+
+| Field | Expected Value |
+|---|---|
+| `agent.name` | `DC01` |
+| `data.win.system.eventID` | `4672` |
+| `data.win.eventdata.subjectUserName` | `<privileged_user>` |
+| `data.win.eventdata.privilegeList` | Administrative privileges |
+| `rule.id` | `100021` |
+| `rule.mitre.id` | `T1078`, `T1550.002` |
+
+## 6.4 Detection Value
+
+H6 provides an early signal.
+
+It tells the analyst:
+
+```text
+A privileged account authenticated to DC01 over the network using NTLM.
+```
+
+This is compatible with the effect of Pass-the-Hash because the technique produces NTLM authentication behavior.
+
+## 6.5 Limitation
+
+H6 does **not** prove Pass-the-Hash by itself.
+
+A normal NTLM authentication using a real password may look similar in Windows logs.
+
+Wazuh does not know whether:
+
+```text
+the user typed a password
+```
+
+or:
+
+```text
+an attacker reused an NTLM hash
+```
+
+Therefore, H6 should be treated as:
+
+```text
+credential-based lateral movement indicator
+```
+
+not as:
+
+```text
+direct proof of hash reuse
+```
+
+---
+
+# 7. H7 — Pass-the-Hash / DCSync Correlation
+
+## 7.1 What H7 Tries to Prove
+
+**H7** tries to prove that credential access behavior and privileged NTLM access appeared as part of the same controlled attack chain.
+
+In natural language:
+
+> **If `DC01` records DCSync-like activity by a non-machine account and this is correlated with privileged access inside a defined timeframe, then the chain is compatible with Pass-the-Hash / credential access behavior.**
+
+## 7.2 Expected DCSync Indicators
+
+| Field | Expected Value |
+|---|---|
+| `agent.name` | `DC01` |
+| `data.win.system.eventID` | `4662` |
+| `data.win.eventdata.accessMask` | `0x100` |
+| `data.win.eventdata.properties` | Replication-related GUIDs or permissions |
+| `data.win.eventdata.subjectUserName` | Non-machine account |
+| `rule.id` | `100030` |
+| `rule.mitre.id` | `T1003.006` |
+
+## 7.3 Expected Correlation Indicators
+
+| Field | Expected Value |
+|---|---|
+| Previous signal | `100030` |
+| Current signal | `100021` |
+| Correlation rule | `100033` |
+| Time window | `300` seconds |
+| Severity | Level `15` |
+| MITRE mapping | `T1550.002`, `T1003.006` |
+
+## 7.4 Detection Value
+
+H7 is the strongest hypothesis in the Pass-the-Hash scenario.
+
+It does not rely on a single NTLM logon.
+
+It links:
+
+```text
+DCSync-like activity → privileged access
+```
+
+That is why it has higher analytical value than `100011` alone.
+
+## 7.5 Limitation
+
+Even H7 must be interpreted carefully.
+
+The SIEM still does not observe the hash directly.
+
+The correct wording is:
+
+```text
+behavior compatible with Pass-the-Hash
+```
+
+not:
+
+```text
+direct proof that the hash was used
+```
+
+---
+
+## 8. Rule 100011 — NTLM Network Logon
+
+Rule `100011` detects NTLM network logon activity.
+
+Main logic:
+
+```text
+Windows Event ID 4624
+Logon Type 3
+Authentication Package NTLM
+```
+
+Detection value:
+
+```text
+Early signal of SMB or Pass-the-Hash-related authentication behavior.
+```
+
+Limitation:
+
+```text
+High false-positive risk if interpreted alone.
+```
+
+A legitimate environment may generate this through:
+
+- old applications;
+- file shares;
+- backup agents;
+- management tools;
+- printers or scanners;
+- legacy authentication paths.
+
+---
+
+## 9. Rule 100021 — Special Privileges Assigned
+
+Rule `100021` detects privileged session context.
+
+Main logic:
+
+```text
+Windows Event ID 4672
+Special privileges assigned to a new logon
+Non-system account
+```
+
+Detection value:
+
+```text
+Shows that the authenticated account received administrative capabilities.
+```
+
+Limitation:
+
+```text
+Administrators normally generate 4672.
+```
+
+This rule becomes useful when combined with:
+
+```text
+NTLM network logon
+remote service creation
+DCSync-like activity
+```
+
+---
+
+## 10. Rule 100030 — DCSync / Secretsdump-like Activity
+
+Rule `100030` detects behavior compatible with DCSync or secretsdump-style activity.
+
+Main logic:
+
+```text
+Windows Event ID 4662
+AccessMask 0x100
+Replication-related permissions
+Non-machine account
+```
+
+The rule filters for replication-related permissions and excludes machine accounts ending in `$`, because machine accounts and domain controllers may legitimately request replication rights.
+
+Detection value:
+
+```text
+High-value credential access signal against Active Directory.
+```
+
+Limitation:
+
+```text
+Requires Directory Service Access auditing and correct Event ID 4662 visibility.
+```
+
+If this telemetry is not enabled, the detection cannot work.
+
+---
+
+## 11. Rule 100033 — Critical Pass-the-Hash / DCSync Correlation
+
+Rule `100033` is the strongest rule in this scenario.
+
+It correlates:
+
+```text
+100030 → DCSync-like activity
+100021 → privileged session
+```
+
+inside a defined timeframe.
+
+Detection value:
+
+```text
+Raises the scenario from isolated signals to a critical correlated alert.
+```
+
+Why it matters:
+
+```text
+A single NTLM logon is weak.
+A single privileged session is common.
+A DCSync-like event is strong.
+A DCSync-like event correlated with privileged access is much stronger.
+```
+
+Limitation:
+
+```text
+It still detects behavior, not the hash itself.
+```
+
+---
+
+## 12. Evidence Observed
+
+The Pass-the-Hash scenario generated evidence on `DC01`.
+
+Observed alert types include:
+
+```text
+100011 — NTLM network logon
+100021 — special privileges assigned
+100030 — DCSync-like activity
+100033 — Pass-the-Hash / DCSync correlation
+92650  — suspicious service creation
+92052  — abnormal command execution
+```
+
+The strongest point in the chain is:
+
+```text
+100030 + 100021 → 100033
+```
+
+because it links DCSync-like credential access with privileged access.
+
+---
+
+## 13. Analyst Interpretation
+
+The Pass-the-Hash scenario is the most sensitive one because it is easy to overclaim.
+
+The analyst should not say:
+
+```text
+Wazuh directly detected the NTLM hash.
+```
+
+The correct interpretation is:
+
+```text
+Wazuh detected a chain of behavior compatible with Pass-the-Hash in the controlled laboratory context.
+```
+
+The attribution is built from:
+
+```text
+who authenticated,
+from where,
+against which host,
+using which authentication package,
+with which privileges,
+after what credential-access behavior,
+and what happened afterwards.
+```
+
+---
+
+## 14. Triage Questions
+
+An analyst should ask:
+
+1. Did the authentication use NTLM?
+2. Was the source IP expected?
+3. Was the account privileged?
+4. Should that account authenticate to `DC01` from that source?
+5. Was there any DCSync-like activity?
+6. Was the DCSync-like activity performed by a machine account or a user account?
+7. Did the activity occur close in time to privileged access?
+8. Was there service creation after the authentication?
+9. Was there command execution after the authentication?
+10. Was the same account used elsewhere?
+
+---
+
+## 15. False-Positive Considerations
+
+Possible legitimate sources of similar telemetry:
+
+| Source | Why it can look similar |
+|---|---|
+| Legacy NTLM authentication | May generate Logon Type 3 with NTLM |
+| Domain administrators | May generate special privilege events |
+| Backup or identity tools | May access sensitive directory data |
+| Domain controller replication | May generate replication-related activity |
+| Endpoint management platforms | May create services remotely |
+| Administrative scripts | May generate privileged remote access |
+
+Recommended tuning:
+
+- exclude expected machine accounts ending in `$`;
+- define approved domain replication sources;
+- monitor DCSync-like activity by user accounts;
+- baseline privileged NTLM usage;
+- reduce NTLM dependency where possible;
+- restrict domain controller access;
+- enforce privileged access workstations;
+- alert when privileged NTLM originates from non-admin workstations.
+
+---
+
+## 16. Related Files
+
+| File | Purpose |
+|---|---|
+| [`detection-hypotheses.md`](detection-hypotheses.md) | Full H1-H7 hypothesis model |
+| [`detection-matrix.md`](detection-matrix.md) | Matrix of rules, telemetry, false positives and readiness |
+| [`../scenarios/pass-the-hash/execution.md`](../scenarios/pass-the-hash/execution.md) | Scenario execution notes |
+| [`../scenarios/pass-the-hash/timeline.md`](../scenarios/pass-the-hash/timeline.md) | Scenario timeline |
+| [`../scenarios/pass-the-hash/wazuh-filter.kql`](../scenarios/pass-the-hash/wazuh-filter.kql) | Wazuh filter for the scenario |
+
+---
+
+## 17. Related Evidence
+
+| Evidence | Purpose |
+|---|---|
+| [`../evidence/pass-the-hash/pth-attack-summary.csv`](../evidence/pass-the-hash/pth-attack-summary.csv) | Filtered scenario summary |
+| [`../evidence/pass-the-hash/json/alert-100030-dcsync.json`](../evidence/pass-the-hash/json/alert-100030-dcsync.json) | DCSync-like activity |
+| [`../evidence/pass-the-hash/json/alert-100033-pth-correlation.json`](../evidence/pass-the-hash/json/alert-100033-pth-correlation.json) | Critical Pass-the-Hash / DCSync correlation |
+| [`../evidence/pass-the-hash/json/alert-100011-ntlm-logon.json`](../evidence/pass-the-hash/json/alert-100011-ntlm-logon.json) | NTLM network logon |
+| [`../evidence/pass-the-hash/json/alert-100021-special-privileges.json`](../evidence/pass-the-hash/json/alert-100021-special-privileges.json) | Privileged session |
+| [`../evidence/pass-the-hash/json/alert-92650-service-creation.json`](../evidence/pass-the-hash/json/alert-92650-service-creation.json) | Suspicious service creation |
+| [`../evidence/pass-the-hash/json/alert-92052-cmd-abnormal-process.json`](../evidence/pass-the-hash/json/alert-92052-cmd-abnormal-process.json) | Abnormal command execution |
+
+---
+
+## 18. Limitations
+
+This detection was validated in a controlled laboratory environment.
+
+The lab does not include:
+
+- production NTLM baselines;
+- multiple domain controllers;
+- legitimate replication traffic at scale;
+- real backup systems;
+- identity management tools;
+- endpoint management platforms;
+- normal administrator traffic;
+- long-term false-positive measurement.
+
+Therefore, the detection should be considered:
+
+```text
+high-value laboratory correlation, not production-ready detection without tuning
+```
+
+---
+
+## 19. Key Takeaway
+
+The Pass-the-Hash scenario must be described carefully.
+
+The strongest conclusion is not:
+
+```text
+The SIEM saw the hash.
+```
+
+The strongest conclusion is:
+
+```text
+The SIEM detected a chain of behavior compatible with Pass-the-Hash by correlating DCSync-like activity, privileged NTLM authentication and remote activity on the domain controller.
+```
+
+That distinction is what makes the detection analytically defensible.
