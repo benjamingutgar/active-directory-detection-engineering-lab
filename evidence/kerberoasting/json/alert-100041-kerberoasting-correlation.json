@@ -1,0 +1,79 @@
+{
+  "timestamp": "<WAZUH_ALERT_TIMESTAMP>",
+  "agent": {
+    "id": "<AGENT_ID>",
+    "name": "DC01",
+    "ip": "192.168.56.20"
+  },
+  "manager": {
+    "name": "Wazuh-Manager"
+  },
+  "rule": {
+    "id": "100041",
+    "level": 15,
+    "description": "TFM - Kerberoasting correlation: three RC4 service-ticket requests from the same source within 120 seconds (T1558.003)",
+    "frequency": 3,
+    "firedtimes": 1,
+    "mitre": {
+      "id": [
+        "T1558.003"
+      ],
+      "technique": [
+        "Kerberoasting"
+      ],
+      "tactic": [
+        "Credential Access"
+      ]
+    },
+    "groups": [
+      "tfm",
+      "kerberoasting",
+      "windows",
+      "correlation"
+    ]
+  },
+  "decoder": {
+    "name": "windows_eventchannel"
+  },
+  "data": {
+    "win": {
+      "system": {
+        "providerName": "Microsoft-Windows-Security-Auditing",
+        "eventID": "4769",
+        "eventRecordID": "137502",
+        "channel": "Security",
+        "computer": "DC01.lab.local",
+        "severityValue": "AUDIT_SUCCESS",
+        "message": "A Kerberos service ticket was requested.",
+        "systemTime": "<WINDOWS_EVENT_TIMESTAMP>"
+      },
+      "eventdata": {
+        "targetUserName": "<domain_user>",
+        "targetDomainName": "LAB.LOCAL",
+        "serviceName": "<service_account>",
+        "serviceSid": "<SANITIZED_SERVICE_SID>",
+        "ticketOptions": "0x40810000",
+        "ticketEncryptionType": "0x17",
+        "ipAddress": "192.168.56.40",
+        "ipPort": "<SOURCE_PORT>",
+        "status": "0x0",
+        "transmittedServices": "-"
+      }
+    }
+  },
+  "correlation": {
+    "base_rule_id": "100040",
+    "matching_requests": 3,
+    "timeframe_seconds": 120,
+    "same_field": "win.eventdata.ipAddress",
+    "source_ip": "192.168.56.40",
+    "related_event_record_ids": [
+      "137452",
+      "137467",
+      "137502"
+    ],
+    "interpretation": "The third RC4 Kerberos service-ticket request from the same source triggered the critical Kerberoasting frequency correlation."
+  },
+  "location": "EventChannel",
+  "evidence_note": "Sanitized Wazuh correlation alert. Passwords, complete Kerberos ticket material, reusable hashes and recovered credentials were removed."
+}
