@@ -1,0 +1,1 @@
+rule.id:100040 OR rule.id:100041 OR rule.id:100042 OR (agent.name:DC01 AND data.win.system.eventID:4769)
