@@ -1,63 +1,174 @@
-{
-  "timestamp": "<WAZUH_ALERT_TIMESTAMP>",
-  "agent": {
-    "id": "<AGENT_ID>",
-    "name": "DC01",
-    "ip": "192.168.56.20"
-  },
-  "manager": {
-    "name": "Wazuh-Manager"
-  },
-  "rule": {
-    "id": "100040",
-    "level": 12,
-    "description": "TFM - RC4 Kerberos service ticket requested from an unexpected source (T1558.003)",
-    "mitre": {
-      "id": [
-        "T1558.003"
-      ],
-      "technique": [
-        "Kerberoasting"
-      ],
-      "tactic": [
-        "Credential Access"
+[
+  {
+    "_index": "wazuh-alerts-4.x-2026.07.14",
+    "_id": "REGISTRO_ANONIMIZADO_100040_KERBEROASTING_01",
+    "_score": null,
+    "_source": {
+      "input": {
+        "type": "log"
+      },
+      "agent": {
+        "ip": "192.168.56.20",
+        "name": "DC01",
+        "id": "001"
+      },
+      "manager": {
+        "name": "wazuh-manager"
+      },
+      "data": {
+        "win": {
+          "eventdata": {
+            "logonGuid": "{GUID_ANONYMIZED}",
+            "targetUserName": "<privileged_user>@LAB.LOCAL",
+            "targetDomainName": "LAB.LOCAL",
+            "serviceName": "<service_account>",
+            "serviceSid": "S-1-5-21-<SID_DOMAIN>-1106",
+            "ticketOptions": "0x40810010",
+            "ticketEncryptionType": "0x17",
+            "ipAddress": "::ffff:192.168.56.40",
+            "ipPort": "33486",
+            "status": "0x0"
+          },
+          "system": {
+            "eventID": "4769",
+            "keywords": "0x8020000000000000",
+            "level": "0",
+            "channel": "Security",
+            "opcode": "0",
+            "version": "0",
+            "systemTime": "2026-07-14T15:21:24.9212257Z",
+            "eventRecordID": "137452",
+            "computer": "DC01.lab.local",
+            "task": "14337",
+            "severityValue": "AUDIT_SUCCESS",
+            "providerName": "Microsoft-Windows-Security-Auditing",
+            "message": "A Kerberos service ticket was requested. Account Name: <privileged_user>@LAB.LOCAL. Service Name: <service_account>. Client Address: ::ffff:192.168.56.40. Ticket Options: 0x40810010. Ticket Encryption Type: 0x17. Failure Code: 0x0."
+          }
+        }
+      },
+      "rule": {
+        "firedtimes": 1,
+        "mail": true,
+        "level": 12,
+        "description": "TFM - Kerberoasting: TGS RC4 solicitado desde una IP no autorizada (T1558.003)",
+        "groups": [
+          "tfm",
+          "credential_access",
+          "kerberos",
+          "kerberoasting"
+        ],
+        "mitre": {
+          "technique": [
+            "Kerberoasting"
+          ],
+          "id": [
+            "T1558.003"
+          ],
+          "tactic": [
+            "Credential Access"
+          ]
+        },
+        "id": "100040"
+      },
+      "location": "EventChannel",
+      "decoder": {
+        "name": "windows_eventchannel"
+      },
+      "timestamp": "2026-07-14T15:22:20.232+0000"
+    },
+    "fields": {
+      "timestamp": [
+        "2026-07-14T15:22:20.232Z"
       ]
     },
-    "groups": [
-      "tfm",
-      "kerberoasting",
-      "windows"
+    "sort": [
+      1784042540232
     ]
   },
-  "decoder": {
-    "name": "windows_eventchannel"
-  },
-  "data": {
-    "win": {
-      "system": {
-        "providerName": "Microsoft-Windows-Security-Auditing",
-        "eventID": "4769",
-        "eventRecordID": "137452",
-        "channel": "Security",
-        "computer": "DC01.lab.local",
-        "severityValue": "AUDIT_SUCCESS",
-        "message": "A Kerberos service ticket was requested.",
-        "systemTime": "<WINDOWS_EVENT_TIMESTAMP>"
+  {
+    "_index": "wazuh-alerts-4.x-2026.07.14",
+    "_id": "REGISTRO_ANONIMIZADO_100040_KERBEROASTING_02",
+    "_score": null,
+    "_source": {
+      "input": {
+        "type": "log"
       },
-      "eventdata": {
-        "targetUserName": "<domain_user>",
-        "targetDomainName": "LAB.LOCAL",
-        "serviceName": "<service_account>",
-        "serviceSid": "<SANITIZED_SERVICE_SID>",
-        "ticketOptions": "0x40810000",
-        "ticketEncryptionType": "0x17",
-        "ipAddress": "192.168.56.40",
-        "ipPort": "<SOURCE_PORT>",
-        "status": "0x0",
-        "transmittedServices": "-"
-      }
-    }
-  },
-  "location": "EventChannel",
-  "evidence_note": "Sanitized Wazuh alert showing the first validated RC4 Kerberos service-ticket request from the controlled attacker source. Passwords, complete ticket material and reusable credential data were removed."
-}
+      "agent": {
+        "ip": "192.168.56.20",
+        "name": "DC01",
+        "id": "001"
+      },
+      "manager": {
+        "name": "wazuh-manager"
+      },
+      "data": {
+        "win": {
+          "eventdata": {
+            "logonGuid": "{GUID_ANONYMIZED}",
+            "targetUserName": "<privileged_user>@LAB.LOCAL",
+            "targetDomainName": "LAB.LOCAL",
+            "serviceName": "<service_account>",
+            "serviceSid": "S-1-5-21-<SID_DOMAIN>-1106",
+            "ticketOptions": "0x40810010",
+            "ticketEncryptionType": "0x17",
+            "ipAddress": "::ffff:192.168.56.40",
+            "ipPort": "33518",
+            "status": "0x0"
+          },
+          "system": {
+            "eventID": "4769",
+            "keywords": "0x8020000000000000",
+            "level": "0",
+            "channel": "Security",
+            "opcode": "0",
+            "version": "0",
+            "systemTime": "2026-07-14T15:21:28.4945813Z",
+            "eventRecordID": "137467",
+            "computer": "DC01.lab.local",
+            "task": "14337",
+            "severityValue": "AUDIT_SUCCESS",
+            "providerName": "Microsoft-Windows-Security-Auditing",
+            "message": "A Kerberos service ticket was requested. Account Name: <privileged_user>@LAB.LOCAL. Service Name: <service_account>. Client Address: ::ffff:192.168.56.40. Ticket Options: 0x40810010. Ticket Encryption Type: 0x17. Failure Code: 0x0."
+          }
+        }
+      },
+      "rule": {
+        "firedtimes": 2,
+        "mail": true,
+        "level": 12,
+        "description": "TFM - Kerberoasting: TGS RC4 solicitado desde una IP no autorizada (T1558.003)",
+        "groups": [
+          "tfm",
+          "credential_access",
+          "kerberos",
+          "kerberoasting"
+        ],
+        "mitre": {
+          "technique": [
+            "Kerberoasting"
+          ],
+          "id": [
+            "T1558.003"
+          ],
+          "tactic": [
+            "Credential Access"
+          ]
+        },
+        "id": "100040"
+      },
+      "location": "EventChannel",
+      "decoder": {
+        "name": "windows_eventchannel"
+      },
+      "timestamp": "2026-07-14T15:22:23.990+0000"
+    },
+    "fields": {
+      "timestamp": [
+        "2026-07-14T15:22:23.990Z"
+      ]
+    },
+    "sort": [
+      1784042543990
+    ]
+  }
+]
