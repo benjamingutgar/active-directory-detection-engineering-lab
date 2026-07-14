@@ -3,7 +3,8 @@
   <!--
     Rule 100001
     Process execution observed after the RDP scenario.
-    Public version: replace "standard_user" with the actual lab username in private deployments.
+    Public version: replace "standard_user" with the actual lab username
+    in private deployments.
   -->
   <rule id="100001" level="10">
     <if_sid>67027</if_sid>
@@ -34,7 +35,8 @@
 
   <!--
     Rule 100011
-    NTLM network logon observed as a shared indicator for SMB/PsExec-like and Pass-the-Hash scenarios.
+    NTLM network logon observed as a shared indicator for SMB/PsExec-like
+    and Pass-the-Hash scenarios.
   -->
   <rule id="100011" level="10">
     <if_sid>92652</if_sid>
@@ -53,7 +55,10 @@
   -->
   <rule id="100021" level="12">
     <if_sid>67028</if_sid>
-    <field name="win.eventdata.subjectUserName" negate="yes" type="pcre2">(?i)^(SYSTEM|LOCAL SERVICE|NETWORK SERVICE|.*\$)$</field>
+    <field
+      name="win.eventdata.subjectUserName"
+      negate="yes"
+      type="pcre2">(?i)^(SYSTEM|LOCAL SERVICE|NETWORK SERVICE|.*\$)$</field>
     <description>TFM - Special privileges assigned to privileged remote session: shared lateral movement indicator</description>
     <group>tfm,lateral_movement,privileged_access,shared_indicator,</group>
     <mitre>
@@ -64,7 +69,8 @@
 
   <!--
     Rule 100022
-    Controlled laboratory chain: Windows Defender disabled followed by privileged access.
+    Controlled laboratory chain: Windows Defender disabled followed
+    by privileged access.
   -->
   <rule id="100022" level="14" frequency="2" timeframe="300">
     <if_matched_sid>92008</if_matched_sid>
@@ -80,14 +86,20 @@
 
   <!--
     Rule 100030
-    DCSync / secretsdump-like activity based on AD replication rights usage.
+    DCSync / secretsdump-like activity based on Active Directory
+    replication-rights usage.
   -->
   <rule id="100030" level="13">
     <if_sid>60103</if_sid>
     <field name="win.system.eventID">^4662$</field>
     <field name="win.eventdata.accessMask" type="pcre2">(?i)^0x100$</field>
-    <field name="win.eventdata.properties" type="pcre2">(?i)(1131f6aa-9c07-11d1-f79f-00c04fc2dcd2|1131f6ad-9c07-11d1-f79f-00c04fc2dcd2|89e95b76-444d-4c62-991a-0facbeda640c|Replicating Directory Changes)</field>
-    <field name="win.eventdata.subjectUserName" negate="yes" type="pcre2">.*\$$</field>
+    <field
+      name="win.eventdata.properties"
+      type="pcre2">(?i)(1131f6aa-9c07-11d1-f79f-00c04fc2dcd2|1131f6ad-9c07-11d1-f79f-00c04fc2dcd2|89e95b76-444d-4c62-991a-0facbeda640c|Replicating Directory Changes)</field>
+    <field
+      name="win.eventdata.subjectUserName"
+      negate="yes"
+      type="pcre2">.*\$$</field>
     <description>TFM - Possible DCSync/secretsdump activity: AD replication rights used by non-machine account (T1003.006)</description>
     <group>tfm,credential_access,dcsync,</group>
     <mitre>
@@ -112,16 +124,18 @@
     </mitre>
   </rule>
 
+</group>
+
 <!-- ====================================================== -->
-<!-- Kerberoasting - MITRE ATT&CK T1558.003                -->
+<!-- Kerberoasting - MITRE ATT&CK T1558.003                 -->
 <!-- ====================================================== -->
 
 <group name="tfm,credential_access,kerberos,kerberoasting,">
 
   <!--
-    H8:
-    Kerberos service ticket issued using RC4-HMAC from a
-    source outside the approved laboratory list.
+    Rule 100040 / H8
+    Kerberos service ticket issued using RC4-HMAC from a source
+    outside the approved laboratory list.
   -->
   <rule id="100040" level="12">
     <if_sid>60103</if_sid>
@@ -137,15 +151,15 @@
 
     <description>TFM - Kerberoasting: RC4 TGS request from an unapproved source (T1558.003)</description>
 
+    <group>tfm,credential_access,kerberos,kerberoasting,</group>
+
     <mitre>
       <id>T1558.003</id>
     </mitre>
-
-    <group>tfm,credential_access,kerberos,kerberoasting,</group>
   </rule>
 
   <!--
-    H9:
+    Rule 100041 / H9
     Three rule 100040 matches from the same source address
     within 120 seconds.
   -->
@@ -162,18 +176,17 @@
 
     <description>TFM - Kerberoasting critical correlation: 3 RC4 TGS requests from the same unapproved source in 120 seconds (T1558.003)</description>
 
+    <group>tfm,credential_access,kerberos,kerberoasting,correlation,</group>
+
     <mitre>
       <id>T1558.003</id>
     </mitre>
-
-    <group>tfm,credential_access,kerberos,kerberoasting,correlation,</group>
   </rule>
 
   <!--
-    H10:
-    Supporting endpoint detection. A process other than
-    lsass.exe connects from WS01 to the Kerberos service
-    on DC01.
+    Rule 100042 / H10
+    Supporting endpoint detection. A process other than lsass.exe
+    connects from WS01 to the Kerberos service on DC01.
   -->
   <rule id="100042" level="13">
     <if_sid>61605</if_sid>
@@ -182,11 +195,9 @@
       name="win.system.computer"
       type="pcre2">(?i)^WS01\.lab\.local$</field>
 
-    <field
-      name="win.eventdata.destinationIp">^192\.168\.56\.20$</field>
+    <field name="win.eventdata.destinationIp">^192\.168\.56\.20$</field>
 
-    <field
-      name="win.eventdata.destinationPort">^88$</field>
+    <field name="win.eventdata.destinationPort">^88$</field>
 
     <field
       name="win.eventdata.image"
@@ -195,11 +206,11 @@
 
     <description>TFM - Unusual process other than lsass.exe connected to the Kerberos service on DC01 (T1558.003)</description>
 
+    <group>tfm,credential_access,kerberos,kerberoasting,sysmon,</group>
+
     <mitre>
       <id>T1558.003</id>
     </mitre>
-
-    <group>tfm,credential_access,kerberos,kerberoasting,sysmon,</group>
   </rule>
 
 </group>
