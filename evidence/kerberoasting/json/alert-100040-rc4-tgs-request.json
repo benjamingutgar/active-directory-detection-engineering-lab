@@ -1,0 +1,63 @@
+{
+  "timestamp": "<WAZUH_ALERT_TIMESTAMP>",
+  "agent": {
+    "id": "<AGENT_ID>",
+    "name": "DC01",
+    "ip": "192.168.56.20"
+  },
+  "manager": {
+    "name": "Wazuh-Manager"
+  },
+  "rule": {
+    "id": "100040",
+    "level": 12,
+    "description": "TFM - RC4 Kerberos service ticket requested from an unexpected source (T1558.003)",
+    "mitre": {
+      "id": [
+        "T1558.003"
+      ],
+      "technique": [
+        "Kerberoasting"
+      ],
+      "tactic": [
+        "Credential Access"
+      ]
+    },
+    "groups": [
+      "tfm",
+      "kerberoasting",
+      "windows"
+    ]
+  },
+  "decoder": {
+    "name": "windows_eventchannel"
+  },
+  "data": {
+    "win": {
+      "system": {
+        "providerName": "Microsoft-Windows-Security-Auditing",
+        "eventID": "4769",
+        "eventRecordID": "137452",
+        "channel": "Security",
+        "computer": "DC01.lab.local",
+        "severityValue": "AUDIT_SUCCESS",
+        "message": "A Kerberos service ticket was requested.",
+        "systemTime": "<WINDOWS_EVENT_TIMESTAMP>"
+      },
+      "eventdata": {
+        "targetUserName": "<domain_user>",
+        "targetDomainName": "LAB.LOCAL",
+        "serviceName": "<service_account>",
+        "serviceSid": "<SANITIZED_SERVICE_SID>",
+        "ticketOptions": "0x40810000",
+        "ticketEncryptionType": "0x17",
+        "ipAddress": "192.168.56.40",
+        "ipPort": "<SOURCE_PORT>",
+        "status": "0x0",
+        "transmittedServices": "-"
+      }
+    }
+  },
+  "location": "EventChannel",
+  "evidence_note": "Sanitized Wazuh alert showing the first validated RC4 Kerberos service-ticket request from the controlled attacker source. Passwords, complete ticket material and reusable credential data were removed."
+}
