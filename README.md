@@ -1,12 +1,13 @@
 # Wazuh Lateral Movement Detection Lab
 
-A **Blue Team detection laboratory** for analyzing Windows lateral movement techniques with **Wazuh**, **Windows Event Logs**, **Sysmon** and **MITRE ATT&CK**.
+A **Blue Team detection laboratory** for analyzing Windows lateral movement and credential-access techniques with **Wazuh**, **Windows Event Logs**, **Sysmon** and **MITRE ATT&CK**.
 
-The lab reproduces three controlled scenarios:
+The lab reproduces four controlled scenarios:
 
 * **RDP lateral movement** — `T1021.001`
 * **SMB / PsExec-like remote execution** — `T1021.002` / `T1569.002`
 * **Pass-the-Hash with DCSync-related evidence** — `T1550.002` / `T1003.006`
+* **Kerberoasting** — `T1558.003`
 
 The repository focuses on detection engineering, not on offensive tooling.
 
@@ -18,14 +19,14 @@ MITRE technique → detection hypothesis → telemetry → Wazuh rule → eviden
 
 ## Overview
 
-This project documents a small Active Directory laboratory used to validate Wazuh detections for lateral movement.
+This project documents a small Active Directory laboratory used to validate Wazuh detections for lateral movement and credential-access activity.
 
 The environment includes:
 
 | Host            | Role                              |      IP Address |
 | --------------- | --------------------------------- | --------------: |
 | `Wazuh-Manager` | SIEM / monitoring server          | `192.168.56.10` |
-| `DC01`          | Domain Controller                 | `192.168.56.20` |
+| `DC01`          | Domain Controller and Kerberos KDC | `192.168.56.20` |
 | `WS01`          | Domain workstation                | `192.168.56.30` |
 | `Kali-ATK01`    | Controlled attack simulation host | `192.168.56.40` |
 
@@ -37,13 +38,13 @@ Full architecture:
 
 ## What This Repository Contains
 
-| Folder                         | Content                                                                                 |
-| ------------------------------ | --------------------------------------------------------------------------------------- |
+| Folder                         | Content                                                                                  |
+| ------------------------------ | ---------------------------------------------------------------------------------------- |
 | [`docs/`](docs/)               | Architecture, deployment notes, telemetry configuration, latencies and incident reports |
-| [`detections/`](detections/)   | Detection hypotheses, detection matrix and MITRE technique write-ups                    |
-| [`scenarios/`](scenarios/)     | Scenario execution notes, timelines and Wazuh KQL filters                               |
-| [`evidence/`](evidence/)       | Anonymized JSON alerts and CSV summaries                                                |
-| [`wazuh/rules/`](wazuh/rules/) | Wazuh custom rules and rule explanations                                                |
+| [`detections/`](detections/)   | Detection hypotheses, detection matrix and MITRE technique write-ups                     |
+| [`scenarios/`](scenarios/)     | Scenario execution notes, timelines and Wazuh KQL filters                                |
+| [`evidence/`](evidence/)       | Anonymized JSON alerts and CSV summaries                                                 |
+| [`wazuh/rules/`](wazuh/rules/) | Wazuh custom rules and rule explanations                                                 |
 
 ---
 
@@ -54,22 +55,26 @@ Full architecture:
 | RDP                    | `T1021.001`              | RDP logon → post-access process execution                         | [`T1021.001-rdp.md`](detections/T1021.001-rdp.md)                         |
 | SMB / PsExec-like      | `T1021.002`, `T1569.002` | NTLM logon → privileges → admin shares → service creation         | [`T1021.002-smb-psexec-like.md`](detections/T1021.002-smb-psexec-like.md) |
 | Pass-the-Hash / DCSync | `T1550.002`, `T1003.006` | DCSync-like activity → privileged NTLM access → correlation alert | [`T1550.002-pass-the-hash.md`](detections/T1550.002-pass-the-hash.md)     |
+| Kerberoasting          | `T1558.003`              | RC4 TGS request → unexpected source → frequency correlation       | [`T1558.003-kerberoasting.md`](detections/T1558.003-kerberoasting.md)     |
 
 ---
 
 ## Detection Hypotheses
 
-The project is built around seven detection hypotheses:
+The project is built around ten detection hypotheses:
 
 | Hypothesis | Scenario               | Purpose                                                                |
 | ---------- | ---------------------- | ---------------------------------------------------------------------- |
 | `H1`       | RDP                    | Detect RDP access from the controlled attacker host to `WS01`          |
 | `H2`       | RDP                    | Detect post-access command execution after RDP                         |
 | `H3`       | SMB / PsExec-like      | Detect NTLM network authentication to `DC01`                           |
-| `H4`       | SMB / PsExec-like      | Detect administrative share access                                     |
-| `H5`       | SMB / PsExec-like      | Detect remote service creation                                         |
+| `H4`       | SMB / PsExec-like      | Detect administrative share access                                    |
+| `H5`       | SMB / PsExec-like      | Detect remote service creation                                        |
 | `H6`       | Pass-the-Hash          | Detect privileged NTLM authentication compatible with credential reuse |
 | `H7`       | Pass-the-Hash / DCSync | Correlate DCSync-like activity with privileged access                  |
+| `H8`       | Kerberoasting          | Detect an RC4 service-ticket request from an unexpected source         |
+| `H9`       | Kerberoasting          | Correlate repeated suspicious RC4 service-ticket requests              |
+| `H10`      | Kerberoasting          | Add optional process-level Kerberos network context                    |
 
 Full model:
 
@@ -99,6 +104,9 @@ Main custom rules:
 | `100022` | Defender-related activity followed by privileged access |
 | `100030` | DCSync / secretsdump-like activity                      |
 | `100033` | Pass-the-Hash / DCSync correlation                      |
+| `100040` | RC4 Kerberos service ticket from an unexpected source   |
+| `100041` | Repeated Kerberoasting-compatible request correlation   |
+| `100042` | Unusual process connecting to the Kerberos service      |
 
 ---
 
@@ -115,8 +123,10 @@ Main documentation:
 Relevant Windows events include:
 
 ```text
-4624, 4625, 4672, 4688, 5145, 7045, 4662
+4624, 4625, 4662, 4672, 4688, 4769, 5145, 7045
 ```
+
+Event ID `4769` provides the main Domain Controller telemetry for the Kerberoasting scenario.
 
 ---
 
@@ -129,12 +139,15 @@ The repository includes anonymized evidence for each scenario:
 | RDP                    | [`evidence/rdp/`](evidence/rdp/)                         |
 | SMB / PsExec-like      | [`evidence/smb-psexec-like/`](evidence/smb-psexec-like/) |
 | Pass-the-Hash / DCSync | [`evidence/pass-the-hash/`](evidence/pass-the-hash/)     |
+| Kerberoasting          | [`evidence/kerberoasting/`](evidence/kerberoasting/)     |
 
 Evidence includes:
 
 * selected Wazuh JSON alerts;
 * filtered CSV summaries;
 * scenario timelines.
+
+Sensitive passwords, complete Kerberos tickets and reusable credential material are excluded.
 
 ---
 
@@ -161,6 +174,7 @@ Wazuh KQL filters are available for each scenario:
 * [`scenarios/rdp/wazuh-filter.kql`](scenarios/rdp/wazuh-filter.kql)
 * [`scenarios/smb-psexec-like/wazuh-filter.kql`](scenarios/smb-psexec-like/wazuh-filter.kql)
 * [`scenarios/pass-the-hash/wazuh-filter.kql`](scenarios/pass-the-hash/wazuh-filter.kql)
+* [`scenarios/kerberoasting/wazuh-filter.kql`](scenarios/kerberoasting/wazuh-filter.kql)
 
 ---
 
@@ -169,7 +183,7 @@ Wazuh KQL filters are available for each scenario:
 Current public version:
 
 ```text
-1.2.x — Detection documentation and repository consistency improvements
+1.3.0 — Kerberoasting detection extension
 ```
 
 See:
