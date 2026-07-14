@@ -112,4 +112,94 @@
     </mitre>
   </rule>
 
+<!-- ====================================================== -->
+<!-- Kerberoasting - MITRE ATT&CK T1558.003                -->
+<!-- ====================================================== -->
+
+<group name="tfm,credential_access,kerberos,kerberoasting,">
+
+  <!--
+    H8:
+    Kerberos service ticket issued using RC4-HMAC from a
+    source outside the approved laboratory list.
+  -->
+  <rule id="100040" level="12">
+    <if_sid>60103</if_sid>
+
+    <field name="win.system.eventID">^4769$</field>
+
+    <field name="win.eventdata.ticketEncryptionType">^0x17$</field>
+
+    <field
+      name="win.eventdata.ipAddress"
+      type="pcre2"
+      negate="yes">^(?:(?:::ffff:)?192\.168\.56\.(?:20|30)|::1|127\.0\.0\.1)$</field>
+
+    <description>TFM - Kerberoasting: RC4 TGS request from an unapproved source (T1558.003)</description>
+
+    <mitre>
+      <id>T1558.003</id>
+    </mitre>
+
+    <group>tfm,credential_access,kerberos,kerberoasting,</group>
+  </rule>
+
+  <!--
+    H9:
+    Three rule 100040 matches from the same source address
+    within 120 seconds.
+  -->
+  <rule
+    id="100041"
+    level="15"
+    frequency="3"
+    timeframe="120"
+    ignore="120">
+
+    <if_matched_sid>100040</if_matched_sid>
+
+    <same_field>win.eventdata.ipAddress</same_field>
+
+    <description>TFM - Kerberoasting critical correlation: 3 RC4 TGS requests from the same unapproved source in 120 seconds (T1558.003)</description>
+
+    <mitre>
+      <id>T1558.003</id>
+    </mitre>
+
+    <group>tfm,credential_access,kerberos,kerberoasting,correlation,</group>
+  </rule>
+
+  <!--
+    H10:
+    Supporting endpoint detection. A process other than
+    lsass.exe connects from WS01 to the Kerberos service
+    on DC01.
+  -->
+  <rule id="100042" level="13">
+    <if_sid>61605</if_sid>
+
+    <field
+      name="win.system.computer"
+      type="pcre2">(?i)^WS01\.lab\.local$</field>
+
+    <field
+      name="win.eventdata.destinationIp">^192\.168\.56\.20$</field>
+
+    <field
+      name="win.eventdata.destinationPort">^88$</field>
+
+    <field
+      name="win.eventdata.image"
+      type="pcre2"
+      negate="yes">(?i)\\Windows\\System32\\lsass\.exe$</field>
+
+    <description>TFM - Unusual process other than lsass.exe connected to the Kerberos service on DC01 (T1558.003)</description>
+
+    <mitre>
+      <id>T1558.003</id>
+    </mitre>
+
+    <group>tfm,credential_access,kerberos,kerberoasting,sysmon,</group>
+  </rule>
+
 </group>
