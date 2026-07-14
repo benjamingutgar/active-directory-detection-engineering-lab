@@ -1,0 +1,4 @@
+sequence,agent.name,event_id,event_record_id,rule.id,rule.level,rule.description,source_ip,ticket_encryption_type,mitre.id,interpretation
+1,DC01,4769,137452,100040,12,"TFM - RC4 Kerberos service ticket requested from an unexpected source (T1558.003)",192.168.56.40,0x17,T1558.003,"First suspicious RC4 service-ticket request"
+2,DC01,4769,137467,100040,12,"TFM - RC4 Kerberos service ticket requested from an unexpected source (T1558.003)",192.168.56.40,0x17,T1558.003,"Second suspicious RC4 service-ticket request from the same source"
+3,DC01,4769,137502,100041,15,"TFM - Kerberoasting correlation: three RC4 service-ticket requests from the same source within 120 seconds (T1558.003)",192.168.56.40,0x17,T1558.003,"Third request triggered the critical frequency correlation"
