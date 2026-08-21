@@ -1,4 +1,4 @@
-# Wazuh Lateral Movement Detection Lab
+# Wazuh Detection Lab
 
 A **Blue Team detection laboratory** for analyzing Windows lateral movement and credential-access techniques with **Wazuh**, **Windows Event Logs**, **Sysmon** and **MITRE ATT&CK**.
 
