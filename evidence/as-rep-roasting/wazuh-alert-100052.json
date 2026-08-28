@@ -1,0 +1,104 @@
+{
+  "ruleVersionNote": "The stored alert description differs from the current XML description. The exact XML revision active during this alert was not preserved.",
+  "agent": {
+    "ip": "192.168.56.20",
+    "name": "DC01",
+    "id": "001"
+  },
+  "manager": {
+    "name": "wazuh-manager"
+  },
+  "correlationEvents": [
+    {
+      "eventRecordID": "139034",
+      "systemTime": "2026-08-28T20:08:11.6139542Z",
+      "eventID": "4768",
+      "targetUserName": "svc_asrep_lab",
+      "ipAddress": "::ffff:192.168.56.40",
+      "ipPort": "42370",
+      "preAuthType": "0",
+      "ticketEncryptionType": "0x17",
+      "status": "0x0",
+      "ticketOptions": "0x50800000"
+    },
+    {
+      "eventRecordID": "139064",
+      "systemTime": "2026-08-28T20:08:27.5104550Z",
+      "eventID": "4768",
+      "targetUserName": "svc_asrep_lab",
+      "ipAddress": "::ffff:192.168.56.40",
+      "ipPort": "59444",
+      "preAuthType": "0",
+      "ticketEncryptionType": "0x17",
+      "status": "0x0",
+      "ticketOptions": "0x50800000"
+    },
+    {
+      "eventRecordID": "139070",
+      "systemTime": "2026-08-28T20:08:31.0812711Z",
+      "eventID": "4768",
+      "targetUserName": "svc_asrep_lab",
+      "ipAddress": "::ffff:192.168.56.40",
+      "ipPort": "49826",
+      "preAuthType": "0",
+      "ticketEncryptionType": "0x17",
+      "status": "0x0",
+      "ticketOptions": "0x50800000"
+    }
+  ],
+  "data": {
+    "win": {
+      "eventdata": {
+        "targetUserName": "svc_asrep_lab",
+        "targetDomainName": "LAB.LOCAL",
+        "serviceName": "krbtgt",
+        "ticketOptions": "0x50800000",
+        "status": "0x0",
+        "ticketEncryptionType": "0x17",
+        "preAuthType": "0",
+        "ipAddress": "::ffff:192.168.56.40",
+        "ipPort": "49826"
+      },
+      "system": {
+        "eventID": "4768",
+        "channel": "Security",
+        "systemTime": "2026-08-28T20:08:31.0812711Z",
+        "eventRecordID": "139070",
+        "computer": "DC01.lab.local",
+        "severityValue": "AUDIT_SUCCESS",
+        "providerName": "Microsoft-Windows-Security-Auditing"
+      }
+    }
+  },
+  "rule": {
+    "firedtimes": 1,
+    "mail": true,
+    "level": 14,
+    "description": "TFM - Multiple AS-REP requests without pre-authentication from the same source (T1558.004)",
+    "groups": [
+      "tfm",
+      "windows",
+      "kerberos",
+      "credential_access",
+      "asrep_roasting"
+    ],
+    "mitre": {
+      "technique": [
+        "AS-REP Roasting"
+      ],
+      "id": [
+        "T1558.004"
+      ],
+      "tactic": [
+        "Credential Access"
+      ]
+    },
+    "id": "100052",
+    "frequency": 3
+  },
+  "location": "EventChannel",
+  "decoder": {
+    "name": "windows_eventchannel"
+  },
+  "timestamp": "2026-08-28T20:09:03.086+0000"
+}
