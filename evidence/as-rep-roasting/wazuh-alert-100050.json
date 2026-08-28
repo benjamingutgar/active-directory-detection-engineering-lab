@@ -1,0 +1,67 @@
+{
+  "input": {
+    "type": "log"
+  },
+  "agent": {
+    "ip": "192.168.56.20",
+    "name": "DC01",
+    "id": "001"
+  },
+  "manager": {
+    "name": "wazuh-manager"
+  },
+  "data": {
+    "win": {
+      "eventdata": {
+        "targetUserName": "svc_asrep_lab",
+        "targetDomainName": "LAB.LOCAL",
+        "serviceName": "krbtgt",
+        "ticketOptions": "0x50800000",
+        "status": "0x0",
+        "ticketEncryptionType": "0x17",
+        "preAuthType": "0",
+        "ipAddress": "::ffff:192.168.56.40",
+        "ipPort": "42370"
+      },
+      "system": {
+        "eventID": "4768",
+        "channel": "Security",
+        "systemTime": "2026-08-28T20:08:11.6139542Z",
+        "eventRecordID": "139034",
+        "computer": "DC01.lab.local",
+        "severityValue": "AUDIT_SUCCESS",
+        "providerName": "Microsoft-Windows-Security-Auditing"
+      }
+    }
+  },
+  "rule": {
+    "firedtimes": 1,
+    "mail": true,
+    "level": 12,
+    "description": "TFM - Kerberos AS-REP issued without pre-authentication: possible AS-REP Roasting (T1558.004)",
+    "groups": [
+      "tfm",
+      "windows",
+      "kerberos",
+      "credential_access",
+      "asrep_roasting"
+    ],
+    "mitre": {
+      "technique": [
+        "AS-REP Roasting"
+      ],
+      "id": [
+        "T1558.004"
+      ],
+      "tactic": [
+        "Credential Access"
+      ]
+    },
+    "id": "100050"
+  },
+  "location": "EventChannel",
+  "decoder": {
+    "name": "windows_eventchannel"
+  },
+  "timestamp": "2026-08-28T20:08:33.669+0000"
+}
