@@ -1,0 +1,7 @@
+timestamp,agent.name,rule.description,rule.level,rule.id
+"Aug 28, 2026 @ 22:08:33.669",DC01,"TFM - Kerberos AS-REP issued without pre-authentication: possible AS-REP Roasting (T1558.004)",12,100050
+"Aug 28, 2026 @ 22:08:58.902",DC01,"TFM - Kerberos AS-REP issued without pre-authentication: possible AS-REP Roasting (T1558.004)",12,100050
+"Aug 28, 2026 @ 22:09:03.086",DC01,"TFM - Multiple AS-REP requests without pre-authentication from the same source (T1558.004)",14,100052
+"Aug 28, 2026 @ 22:09:08.122",DC01,"TFM - Kerberos AS-REP issued without pre-authentication: possible AS-REP Roasting (T1558.004)",12,100050
+"Aug 28, 2026 @ 22:09:11.024",DC01,"TFM - Kerberos AS-REP issued without pre-authentication: possible AS-REP Roasting (T1558.004)",12,100050
+"Aug 28, 2026 @ 22:09:15.637",DC01,"TFM - Multiple AS-REP requests without pre-authentication from the same source (T1558.004)",14,100052
