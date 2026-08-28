@@ -2,12 +2,13 @@
 
 A **Blue Team detection laboratory** for analyzing Windows lateral movement and credential-access techniques with **Wazuh**, **Windows Event Logs**, **Sysmon** and **MITRE ATT&CK**.
 
-The lab reproduces four controlled scenarios:
+The lab reproduces five controlled scenarios:
 
 * **RDP lateral movement** — `T1021.001`
 * **SMB / PsExec-like remote execution** — `T1021.002` / `T1569.002`
 * **Pass-the-Hash with DCSync-related evidence** — `T1550.002` / `T1003.006`
 * **Kerberoasting** — `T1558.003`
+* **AS-REP Roasting** — `T1558.004`
 
 The repository focuses on detection engineering, not on offensive tooling.
 
@@ -40,14 +41,14 @@ Full architecture:
 
 ## What This Repository Contains
 
-| Folder                                           | Content                                                                                  |
-| ------------------------------------------------ | ---------------------------------------------------------------------------------------- |
-| [`docs/`](docs/)                                 | Architecture, deployment notes, telemetry configuration, latencies and incident reports |
-| [`docs/windows-internals/`](docs/windows-internals/) | Windows / Active Directory internals behind the reproduced techniques                 |
-| [`detections/`](detections/)                     | Detection hypotheses, detection matrix and MITRE technique write-ups                    |
-| [`scenarios/`](scenarios/)                       | Scenario execution notes, timelines and Wazuh KQL filters                               |
-| [`evidence/`](evidence/)                         | Anonymized JSON alerts and CSV summaries                                                 |
-| [`wazuh/rules/`](wazuh/rules/)                   | Wazuh custom rules and rule explanations                                                 |
+| Folder                                               | Content                                                                                  |
+| ---------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| [`docs/`](docs/)                                     | Architecture, deployment notes, telemetry configuration, latencies and incident reports |
+| [`docs/windows-internals/`](docs/windows-internals/) | Windows / Active Directory internals behind the reproduced techniques                    |
+| [`detections/`](detections/)                         | Detection hypotheses, detection matrix and MITRE technique write-ups                     |
+| [`scenarios/`](scenarios/)                           | Scenario execution notes, timelines and Wazuh KQL filters                                |
+| [`evidence/`](evidence/)                             | Anonymized JSON alerts and CSV summaries                                                  |
+| [`wazuh/rules/`](wazuh/rules/)                       | Wazuh custom rules and rule explanations                                                  |
 
 ---
 
@@ -79,38 +80,45 @@ These documents explain the internal mechanisms behind the events used by the de
 | SMB / Admin Shares — `T1021.002` | SMB negotiation, NTLM, Logon Type 3, `ADMIN$`, `IPC$`, Named Pipes, DCE/RPC, SCMR, Service Control Manager and SYSTEM execution | [`SMB Internals`](docs/windows-internals/T1021.002-smb-admin-shares-internals.md) |
 | Pass-the-Hash — `T1550.002` | NT hashes, NTLM challenge-response, authentication, logon sessions, access tokens, PsExec execution and detection limitations | [`Pass-the-Hash Internals`](docs/windows-internals/T1550.002-pass-the-hash-internals.md) |
 | Kerberoasting — `T1558.003` | Kerberos, KDC, TGT/TGS, SPNs, service-account keys, `4769`, offline password testing, detection limitations and hardening | [`Kerberoasting Internals`](docs/windows-internals/T1558.003-kerberoasting-internals.md) |
+| AS-REP Roasting — `T1558.004` | Kerberos Authentication Service, KDC, TGT requests, pre-authentication, `krbtgt`, Event ID `4768`, RC4-HMAC and frequency correlation | [`AS-REP Roasting Internals`](docs/windows-internals/T1558.004-as-rep-roasting-internals.md) |
 
 The Kerberoasting internals document also covers the defensive implications of offline password testing and service-account hardening, including strong credentials, gMSA, AES, RC4 reduction, least privilege and SPN hygiene.
+
+The AS-REP Roasting internals document explains how a TGT request without Kerberos pre-authentication generates Event ID `4768` on the Domain Controller and how fields such as `preAuthType`, `status`, `ticketEncryptionType`, account and source address can be used to detect the activity.
 
 ---
 
 ## Detection Scenarios
 
-| Scenario               | Technique                | Main Detection Chain                                              | Write-up                                                                  |
-| ---------------------- | ------------------------ | ----------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| RDP                    | `T1021.001`              | RDP logon → post-access process execution                         | [`T1021.001-rdp.md`](detections/T1021.001-rdp.md)                         |
-| SMB / PsExec-like      | `T1021.002`, `T1569.002` | NTLM logon → privileges → admin shares → service creation         | [`T1021.002-smb-psexec-like.md`](detections/T1021.002-smb-psexec-like.md) |
-| Pass-the-Hash / DCSync | `T1550.002`, `T1003.006` | DCSync-like activity → privileged NTLM access → correlation alert | [`T1550.002-pass-the-hash.md`](detections/T1550.002-pass-the-hash.md)     |
-| Kerberoasting          | `T1558.003`              | RC4 TGS request → unexpected source → frequency correlation       | [`T1558.003-kerberoasting.md`](detections/T1558.003-kerberoasting.md)     |
+| Scenario               | Technique                | Main Detection Chain                                                          | Write-up                                                                  |
+| ---------------------- | ------------------------ | ----------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| RDP                    | `T1021.001`              | RDP logon → post-access process execution                                     | [`T1021.001-rdp.md`](detections/T1021.001-rdp.md)                         |
+| SMB / PsExec-like      | `T1021.002`, `T1569.002` | NTLM logon → privileges → admin shares → service creation                     | [`T1021.002-smb-psexec-like.md`](detections/T1021.002-smb-psexec-like.md) |
+| Pass-the-Hash / DCSync | `T1550.002`, `T1003.006` | DCSync-like activity → privileged NTLM access → correlation alert             | [`T1550.002-pass-the-hash.md`](detections/T1550.002-pass-the-hash.md)     |
+| Kerberoasting          | `T1558.003`              | RC4 TGS request → unexpected source → frequency correlation                   | [`T1558.003-kerberoasting.md`](detections/T1558.003-kerberoasting.md)     |
+| AS-REP Roasting        | `T1558.004`              | TGT request without pre-authentication → RC4 context → frequency correlation  | [`T1558.004-as-rep-roasting.md`](detections/T1558.004-as-rep-roasting.md) |
 
 ---
 
 ## Detection Hypotheses
 
-The project is built around ten detection hypotheses:
+The project is built around thirteen detection hypotheses:
 
-| Hypothesis | Scenario               | Purpose                                                                |
-| ---------- | ---------------------- | ---------------------------------------------------------------------- |
-| `H1`       | RDP                    | Detect RDP access from the controlled attacker host to `WS01`          |
-| `H2`       | RDP                    | Detect post-access command execution after RDP                         |
-| `H3`       | SMB / PsExec-like      | Detect NTLM network authentication to `DC01`                           |
-| `H4`       | SMB / PsExec-like      | Detect administrative share access                                    |
-| `H5`       | SMB / PsExec-like      | Detect remote service creation                                        |
-| `H6`       | Pass-the-Hash          | Detect privileged NTLM authentication compatible with credential reuse |
-| `H7`       | Pass-the-Hash / DCSync | Correlate DCSync-like activity with privileged access                  |
-| `H8`       | Kerberoasting          | Detect an RC4 service-ticket request from an unexpected source         |
-| `H9`       | Kerberoasting          | Correlate repeated suspicious RC4 service-ticket requests              |
-| `H10`      | Kerberoasting          | Add optional process-level Kerberos network context                    |
+| Hypothesis | Scenario               | Purpose                                                                        |
+| ---------- | ---------------------- | ------------------------------------------------------------------------------ |
+| `H1`       | RDP                    | Detect RDP access from the controlled attacker host to `WS01`                  |
+| `H2`       | RDP                    | Detect post-access command execution after RDP                                 |
+| `H3`       | SMB / PsExec-like      | Detect NTLM network authentication to `DC01`                                   |
+| `H4`       | SMB / PsExec-like      | Detect administrative share access                                            |
+| `H5`       | SMB / PsExec-like      | Detect remote service creation                                                |
+| `H6`       | Pass-the-Hash          | Detect privileged NTLM authentication compatible with credential reuse        |
+| `H7`       | Pass-the-Hash / DCSync | Correlate DCSync-like activity with privileged access                          |
+| `H8`       | Kerberoasting          | Detect an RC4 service-ticket request from an unexpected source                 |
+| `H9`       | Kerberoasting          | Correlate repeated suspicious RC4 service-ticket requests                      |
+| `H10`      | Kerberoasting          | Add optional process-level Kerberos network context                            |
+| `H11`      | AS-REP Roasting        | Detect a successful TGT request without Kerberos pre-authentication            |
+| `H12`      | AS-REP Roasting        | Add RC4-HMAC encryption context to the no-pre-authentication request           |
+| `H13`      | AS-REP Roasting        | Correlate repeated AS-REP requests from the same source within 60 seconds      |
 
 Full model:
 
@@ -131,18 +139,21 @@ Rule explanation:
 
 Main custom rules:
 
-|  Rule ID | Purpose                                                  |
-| -------: | -------------------------------------------------------- |
-| `100001` | RDP logon context                                        |
-| `100010` | Remote service creation                                  |
-| `100011` | NTLM network logon                                       |
-| `100021` | Special privileges assigned                              |
-| `100022` | Defender-related activity followed by privileged access  |
-| `100030` | DCSync / secretsdump-like activity                       |
-| `100033` | Pass-the-Hash / DCSync correlation                       |
-| `100040` | RC4 Kerberos service ticket from an unexpected source    |
-| `100041` | Repeated Kerberoasting-compatible request correlation    |
-| `100042` | Unusual process connecting to the Kerberos service       |
+|  Rule ID | Purpose                                                        |
+| -------: | -------------------------------------------------------------- |
+| `100001` | RDP logon context                                              |
+| `100010` | Remote service creation                                        |
+| `100011` | NTLM network logon                                             |
+| `100021` | Special privileges assigned                                    |
+| `100022` | Defender-related activity followed by privileged access        |
+| `100030` | DCSync / secretsdump-like activity                             |
+| `100033` | Pass-the-Hash / DCSync correlation                             |
+| `100040` | RC4 Kerberos service ticket from an unexpected source          |
+| `100041` | Repeated Kerberoasting-compatible request correlation          |
+| `100042` | Unusual process connecting to the Kerberos service             |
+| `100050` | Successful TGT request without Kerberos pre-authentication     |
+| `100051` | AS-REP request using RC4-HMAC encryption                       |
+| `100052` | Repeated AS-REP request correlation from the same source       |
 
 ---
 
@@ -159,8 +170,17 @@ Main documentation:
 Relevant Windows events include:
 
 ```text
-4624, 4625, 4662, 4672, 4688, 4769, 5145, 7045
+4624, 4625, 4662, 4672, 4688, 4768, 4769, 5145, 7045
 ```
+
+Kerberos telemetry used by the repository:
+
+| Event ID | Scenario | Description |
+| -------: | -------- | ----------- |
+| `4768` | AS-REP Roasting | Kerberos authentication ticket or TGT request |
+| `4769` | Kerberoasting | Kerberos service ticket or TGS request |
+
+Event ID `4768` provides the main Domain Controller telemetry for the AS-REP Roasting scenario.
 
 Event ID `4769` provides the main Domain Controller telemetry for the Kerberoasting scenario.
 
@@ -176,14 +196,59 @@ The repository includes anonymized evidence for each scenario:
 | SMB / PsExec-like      | [`evidence/smb-psexec-like/`](evidence/smb-psexec-like/) |
 | Pass-the-Hash / DCSync | [`evidence/pass-the-hash/`](evidence/pass-the-hash/)     |
 | Kerberoasting          | [`evidence/kerberoasting/`](evidence/kerberoasting/)     |
+| AS-REP Roasting        | [`evidence/as-rep-roasting/`](evidence/as-rep-roasting/) |
 
 Evidence includes:
 
 * selected Wazuh JSON alerts;
 * filtered CSV summaries;
-* scenario timelines.
+* scenario timelines;
+* execution timestamps;
+* detection-latency measurements.
 
-Sensitive passwords, complete Kerberos tickets and reusable credential material are excluded.
+Sensitive passwords, complete Kerberos tickets, AS-REP output strings and reusable credential material are excluded.
+
+---
+
+## Detection Boundaries
+
+The project distinguishes between:
+
+```text
+Windows event
+      ↓
+Wazuh alert
+      ↓
+correlation
+      ↓
+MITRE ATT&CK attribution
+```
+
+A single event does not always prove a complete technique.
+
+Examples:
+
+```text
+NTLM logon ≠ direct proof of Pass-the-Hash
+
+RC4 TGS request ≠ direct proof that a service-account password was recovered
+
+Event ID 4768 with preAuthType 0 ≠ direct proof that an AS-REP password was recovered
+```
+
+For AS-REP Roasting, the strongest observed detection combines:
+
+```text
+Event ID 4768
++
+preAuthType = 0
++
+successful request
++
+RC4-HMAC context
++
+repeated requests from the same source
+```
 
 ---
 
@@ -212,6 +277,7 @@ Wazuh KQL filters are available for each scenario:
 * [`scenarios/smb-psexec-like/wazuh-filter.kql`](scenarios/smb-psexec-like/wazuh-filter.kql)
 * [`scenarios/pass-the-hash/wazuh-filter.kql`](scenarios/pass-the-hash/wazuh-filter.kql)
 * [`scenarios/kerberoasting/wazuh-filter.kql`](scenarios/kerberoasting/wazuh-filter.kql)
+* [`scenarios/as-rep-roasting/wazuh-filter.kql`](scenarios/as-rep-roasting/wazuh-filter.kql)
 
 ---
 
@@ -220,7 +286,7 @@ Wazuh KQL filters are available for each scenario:
 Current public version:
 
 ```text
-1.3.0 — Kerberoasting detection extension
+1.3.1 — AS-REP Roasting detection extension
 ```
 
 See:
