@@ -214,3 +214,59 @@
   </rule>
 
 </group>
+
+<!-- ====================================================== -->
+<!-- AS-REP Roasting - MITRE ATT&CK T1558.004              -->
+<!-- ====================================================== -->
+
+<group name="tfm,windows,kerberos,credential_access,asrep_roasting,">
+
+  <!-- Successful TGT request without Kerberos pre-authentication -->
+  <rule id="100050" level="12">
+    <if_sid>60103</if_sid>
+
+    <field name="win.system.eventID">^4768$</field>
+
+    <field name="win.eventdata.preAuthType">^0$</field>
+
+    <field
+      name="win.eventdata.targetUserName"
+      negate="yes"
+      type="pcre2">(?i)^(krbtgt|.*\$)$</field>
+
+    <description>TFM - Kerberos AS-REP issued without pre-authentication: possible AS-REP Roasting (T1558.004)</description>
+
+    <mitre>
+      <id>T1558.004</id>
+    </mitre>
+  </rule>
+
+  <!-- RC4-HMAC context -->
+  <rule id="100051" level="13">
+    <if_sid>100050</if_sid>
+
+    <field
+      name="win.eventdata.ticketEncryptionType"
+      type="pcre2">(?i)^0x17$</field>
+
+    <description>TFM - AS-REP without pre-authentication using RC4-HMAC encryption (T1558.004)</description>
+
+    <mitre>
+      <id>T1558.004</id>
+    </mitre>
+  </rule>
+
+  <!-- Three qualifying requests from the same source in 60 seconds -->
+  <rule id="100052" level="14" frequency="3" timeframe="60">
+    <if_matched_sid>100051</if_matched_sid>
+
+    <same_field>win.eventdata.ipAddress</same_field>
+
+    <description>TFM - Multiple RC4 AS-REP requests without pre-authentication from the same source (T1558.004)</description>
+
+    <mitre>
+      <id>T1558.004</id>
+    </mitre>
+  </rule>
+
+</group>
