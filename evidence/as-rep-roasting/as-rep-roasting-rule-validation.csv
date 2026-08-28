@@ -1,0 +1,4 @@
+rule_id,level,validation_date,event_id,event_record_id,event_time_utc,alert_time_utc,event_to_alert_seconds,target_user,source_ip,pre_auth_type,encryption_type,status,result
+100050,12,2026-08-28,4768,139034,2026-08-28T20:08:11.6139542Z,2026-08-28T20:08:33.669Z,22.055046,svc_asrep_lab,::ffff:192.168.56.40,0,0x17,0x0,validated
+100051,13,2026-08-18,4768,136332,2026-08-18T01:28:22.2865658Z,2026-08-18T01:33:59.401Z,337.114434,svc_asrep_lab,::ffff:192.168.56.40,0,0x17,0x0,validated
+100052,14,2026-08-28,4768,139070,2026-08-28T20:08:31.0812711Z,2026-08-28T20:09:03.086Z,32.004729,svc_asrep_lab,::ffff:192.168.56.40,0,0x17,0x0,validated
