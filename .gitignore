@@ -18,6 +18,7 @@
 *.pcap
 *.pcapng
 *.log
+*.dmp
 
 # Secrets and credentials
 .env
@@ -30,6 +31,11 @@ passwords.*
 secrets.*
 hashes.*
 ntlm.*
+
+# Kerberos and credential material
+*.hash
+*.pot
+*.potfile
 *.kirbi
 *.ccache
 
