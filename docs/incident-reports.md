@@ -569,75 +569,6 @@ It is not part of the principal Kali-based validation because Kali Linux does no
 
 ---
 
-## 6. Report Summary
-
-| Scenario | Affected Host | Severity | Strongest Evidence | Main Limitation |
-|---|---|---|---|---|
-| RDP | `WS01` | High | RDP access followed by process execution | RDP can be legitimate |
-| SMB / PsExec-like | `DC01` | High / Critical | NTLM, privileges, admin shares, service creation | Remote administration can be legitimate |
-| Pass-the-Hash / DCSync | `DC01` | Critical | DCSync-like activity correlated with privileged NTLM access | Wazuh does not observe the hash directly |
-| Kerberoasting | `DC01` | High / Critical | Event ID `4769`, RC4, unexpected source and rule `100041` correlation | Wazuh does not observe offline password testing |
-
----
-
-## 7. Shared Response Priorities
-
-Across the four scenarios, the analyst should prioritize:
-
-1. Source identification.
-2. User and service-account identification.
-3. Asset criticality.
-4. Privilege review.
-5. Timeline reconstruction.
-6. Related event correlation.
-7. Credential rotation where compromise is suspected.
-8. Source-host containment when unauthorized.
-9. Evidence preservation.
-10. Tuning and false-positive documentation.
-
----
-
-## 8. Key Takeaway
-
-The incident reports transform raw alerts into response-oriented information.
-
-The strongest reports are not based on a single event.
-
-They combine:
-
-```text
-asset criticality
-+
-source
-+
-account
-+
-privileges
-+
-telemetry chain
-+
-temporal correlation
-+
-MITRE mapping
-+
-known limitations
-```
-
-The four scenarios also demonstrate different visibility boundaries:
-
-```text
-RDP:
-access and process activity are observable
-
-SMB / PsExec-like:
-authentication, shares, services and execution are observable
-
-Pass-the-Hash:
-the hash is hidden, but surrounding behavior can be correlated
-
-Kerberoasting:
-the ticket request is observable, while offline password testing is hidden
-
 ## 6. Report — AS-REP Roasting-Compatible Activity
 
 ### Classification
@@ -745,6 +676,79 @@ The supplied evidence does not include:
 - account cleanup evidence;
 - proof of offline password recovery;
 - a one-to-one mapping for all visible command executions.
+
+## 7. Report Summary
+
+| Scenario | Affected Host | Severity | Strongest Evidence | Main Limitation |
+|---|---|---|---|---|
+| RDP | `WS01` | High | RDP access followed by process execution | RDP can be legitimate |
+| SMB / PsExec-like | `DC01` | High / Critical | NTLM, privileges, admin shares, service creation | Remote administration can be legitimate |
+| Pass-the-Hash / DCSync | `DC01` | Critical | DCSync-like activity correlated with privileged NTLM access | Wazuh does not observe the hash directly |
+| Kerberoasting | `DC01` | High / Critical | Event ID `4769`, RC4, unexpected source and rule `100041` correlation | Wazuh does not observe offline password testing |
+| AS-REP Roasting | `DC01` | High | Event ID `4768`, no pre-authentication, RC4 context and rule `100052` correlation | Wazuh does not observe offline password recovery |
+
+---
+
+## 8. Shared Response Priorities
+
+Across the five scenarios, the analyst should prioritize:
+
+1. Source identification.
+2. User and service-account identification.
+3. Asset criticality.
+4. Privilege review.
+5. Timeline reconstruction.
+6. Related event correlation.
+7. Credential rotation where compromise is suspected.
+8. Source-host containment when unauthorized.
+9. Evidence preservation.
+10. Tuning and false-positive documentation.
+
+---
+
+## 9. Key Takeaway
+
+The incident reports transform raw alerts into response-oriented information.
+
+The strongest reports are not based on a single event.
+
+They combine:
+
+```text
+asset criticality
++
+source
++
+account
++
+privileges
++
+telemetry chain
++
+temporal correlation
++
+MITRE mapping
++
+known limitations
+```
+
+The five scenarios also demonstrate different visibility boundaries:
+
+```text
+RDP:
+access and process activity are observable
+
+SMB / PsExec-like:
+authentication, shares, services and execution are observable
+
+Pass-the-Hash:
+the hash is hidden, but surrounding behavior can be correlated
+
+Kerberoasting:
+the ticket request is observable, while offline password testing is hidden
+
+AS-REP Roasting:
+the no-pre-authentication TGT request is observable, while offline password recovery is hidden
 ```
 
 This distinction should remain explicit in every incident conclusion.
