@@ -168,48 +168,125 @@ The attribution is built from the chain:
 DCSync-like activity → NTLM network authentication → privileged session → remote activity
 ```
 
-## 6. Scenario Comparison
+## 6. Kerberoasting Event-to-Alert Timing
 
-| Scenario | Measured Rule | Average Latency | Highest-Severity Rule | Evidence Quality |
-|---|---:|---:|---:|---|
-| RDP | `100001` | 20.557 s | `100001` / level 10 | Medium / High |
-| SMB / PsExec-like | `100010` | 13.336 s | `100010`, `100021`, `92650` / around level 12 | High |
-| Pass-the-Hash / DCSync | `100011` | 11.056 s | `100033` / level 15 | High correlated |
+No command-start timestamp was preserved for the Kerberoasting evidence. Therefore, the available values measure native-event-to-Wazuh-alert delay, not complete attack-to-detection latency.
 
-## 7. Why Latency Alone Is Not Enough
+| Rule | Native Event Time UTC | Wazuh Alert Time UTC | Event-to-Alert Difference |
+|---:|---|---|---:|
+| `100040` | `2026-07-14T15:21:24.9212257Z` | `2026-07-14T15:22:20.232Z` | `55.311 s` |
+| `100040` | `2026-07-14T15:21:28.4945813Z` | `2026-07-14T15:22:23.990Z` | `55.495 s` |
+| `100041` | `2026-07-14T15:21:34.5543885Z` | `2026-07-14T15:22:29.738Z` | `55.184 s` |
 
-The fastest alert is not necessarily the best alert.
+Average observable event-to-alert difference:
 
-A low-level or medium-confidence alert may appear earlier than a high-confidence correlation alert. For detection engineering, both are useful:
+```text
+55.330 seconds
+```
+
+This value must not be compared directly with attack-start latencies from the earlier scenarios.
+
+---
+
+## 7. AS-REP Roasting Timing
+
+The AS-REP evidence contains two validation sessions.
+
+### 18 August 2026
+
+| Rule | Native Event Time UTC | Wazuh Alert Time UTC | Event-to-Alert Difference |
+|---:|---|---|---:|
+| `100051` | `2026-08-18T01:28:22.2865658Z` | `2026-08-18T01:33:59.401Z` | `337.114 s` |
+
+The evidence does not identify the cause of the unusually long difference. It may represent collection, queueing, indexing or clock behavior, but the supplied data cannot distinguish between them.
+
+It is not presented as normal AS-REP detection latency.
+
+### 28 August 2026
+
+| Rule | Native Event Time UTC | Wazuh Alert Time UTC | Event-to-Alert Difference |
+|---:|---|---|---:|
+| `100050` | `2026-08-28T20:08:11.6139542Z` | `2026-08-28T20:08:33.669Z` | `22.055 s` |
+| `100052` | `2026-08-28T20:08:31.0812711Z` | `2026-08-28T20:09:03.086Z` | `32.005 s` |
+
+The first screenshot execution marker was:
+
+```text
+2026-08-28T20:08:10Z
+```
+
+This gives:
+
+| Measurement | Difference |
+|---|---:|
+| First marker → Event ID `4768`, record `139034` | `1.614 s` |
+| First marker → Wazuh alert `100050` | `23.669 s` |
+
+Only this first marker can be linked temporally to the preserved native event without forcing an unsupported one-to-one mapping.
+
+The three correlation events occurred within:
+
+```text
+19.467 seconds
+```
+
+---
+
+## 8. Scenario Comparison
+
+| Scenario | Measurement Type | Measured Rule | Result | Highest-Severity Rule |
+|---|---|---:|---:|---:|
+| RDP | Attack start → alert | `100001` | Average `20.557 s` | `100001` / level 10 |
+| SMB / PsExec-like | Attack start → alert | `100010` | Average `13.336 s` | Around level 12 |
+| Pass-the-Hash / DCSync | Attack start → early alert | `100011` | Average `11.056 s` | `100033` / level 15 |
+| Kerberoasting | Native event → alert | `100040`, `100041` | Average `55.330 s` | `100041` / level 15 |
+| AS-REP Roasting | First marker → initial alert | `100050` | `23.669 s` | `100052` / level 14 |
+| AS-REP Roasting | Native event → alert | `100050` | `22.055 s` | `100052` / level 14 |
+| AS-REP Roasting | Third correlation event → alert | `100052` | `32.005 s` | `100052` / level 14 |
+
+The measurements do not all use the same starting reference and must not be averaged together.
+
+---
+
+## 9. Why Latency Alone Is Not Enough
+
+A fast alert is not necessarily the strongest alert.
 
 | Alert Type | Value |
 |---|---|
-| Early signal | Helps begin investigation quickly |
-| High-confidence correlation | Helps prioritize severity and response |
-| Supporting telemetry | Helps explain what happened and reduce ambiguity |
+| Early signal | Starts triage quickly |
+| Higher-confidence alert | Adds more specific field conditions |
+| Correlation alert | Adds frequency or related-event context |
+| Supporting telemetry | Explains what happened and reduces ambiguity |
 
-## 8. Operational Use
-
-A SOC analyst could use these measurements as follows:
-
-1. Use early signals such as `100011` to start triage quickly.
-2. Wait for correlated or higher-severity alerts such as `100033` before escalating as critical.
-3. Review supporting evidence such as administrative shares, service creation and process execution.
-4. Avoid over-attribution from a single event.
-
-## 9. Key Takeaway
-
-The laboratory showed detection latencies under 25 seconds in all measured scenarios.
-
-The strongest operational conclusion is not only that Wazuh generated alerts quickly, but that the alert chains were explainable:
+For AS-REP Roasting:
 
 ```text
-RDP:
-remote access + post-access commands
-
-SMB / PsExec-like:
-NTLM + privileges + service creation
-
-Pass-the-Hash:
-NTLM + privileges + DCSync-like evidence + correlation
+100050 = initial no-pre-authentication signal
+100051 = RC4-HMAC context
+100052 = frequency correlation
 ```
+
+---
+
+## 10. Measurement Boundaries
+
+The available evidence does not support:
+
+- a complete AS-REP latency for every visible command execution;
+- a one-to-one mapping between all six command markers and six Windows events;
+- a single continuous timeline containing stored alerts `100050`, `100051` and `100052`;
+- an explanation for the `337.114-second` difference;
+- a production performance benchmark.
+
+---
+
+## 11. Key Takeaway
+
+The first three scenarios have documented attack-start measurements.
+
+Kerberoasting has native-event-to-alert measurements.
+
+AS-REP Roasting has one approximate first-marker-to-alert measurement and several native-event-to-alert measurements.
+
+These categories must remain separate so that the repository does not present ingestion delay as complete attack-to-detection latency.
