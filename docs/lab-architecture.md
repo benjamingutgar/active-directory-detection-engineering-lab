@@ -1,8 +1,8 @@
 # Lab Architecture
 
-This document describes the virtual laboratory used to simulate and detect lateral movement techniques in a Windows Active Directory environment using Wazuh.
+This document describes the virtual laboratory used to simulate and detect lateral-movement and credential-access techniques in a Windows Active Directory environment using Wazuh.
 
-The goal of the lab is not to reproduce a full enterprise network. Its goal is to provide the minimum realistic infrastructure required to generate, collect, correlate and analyze security events related to lateral movement.
+The goal of the lab is not to reproduce a full enterprise network. Its goal is to provide the minimum realistic infrastructure required to generate, collect, correlate and analyze security events related to lateral movement and credential access.
 
 ## 1. Architecture Overview
 
@@ -45,7 +45,8 @@ The lab follows a simple corporate-like structure:
         +-------------------+
 
         Kali-ATK01 also connects to DC01 over SMB/TCP 445 during SMB/PsExec-like
-        and Pass-the-Hash scenarios.
+        and Pass-the-Hash scenarios, and to the Kerberos service on port 88 during
+        Kerberoasting and AS-REP Roasting scenarios.
 ```
 
 ## 2. Network Design
@@ -101,6 +102,7 @@ For that reason, Host-only networking is the safest and most reproducible option
 |---|---|---|---|---|
 | Kali-ATK01 → WS01 | `192.168.56.40` | `192.168.56.30` | RDP / TCP 3389 | RDP lateral movement scenario |
 | Kali-ATK01 → DC01 | `192.168.56.40` | `192.168.56.20` | SMB / TCP 445 | SMB/PsExec-like and Pass-the-Hash scenarios |
+| Kali-ATK01 → DC01 | `192.168.56.40` | `192.168.56.20` | Kerberos / TCP or UDP 88 | Kerberoasting and AS-REP Roasting requests |
 | WS01 ↔ DC01 | `192.168.56.30` | `192.168.56.20` | Domain services | Domain membership, authentication and normal AD interaction |
 | DC01 → Wazuh-Manager | `192.168.56.20` | `192.168.56.10` | Wazuh agent communication | Forwarding Windows events to Wazuh |
 | WS01 → Wazuh-Manager | `192.168.56.30` | `192.168.56.10` | Wazuh agent communication | Forwarding Windows events to Wazuh |
@@ -111,7 +113,7 @@ The monitored systems are:
 
 | Host | Monitoring Status | Reason |
 |---|---|---|
-| `DC01` | Monitored | Generates authentication, privilege, SMB, service creation and DCSync-related events |
+| `DC01` | Monitored | Generates authentication, privilege, SMB, service creation, directory replication and Kerberos KDC telemetry. |
 | `WS01` | Monitored | Generates RDP, logon and post-access process execution events |
 | `Kali-ATK01` | Not monitored by Wazuh in the final detection chain | Used as the controlled origin of the simulated actions |
 | `Wazuh-Manager` | Central collector | Receives, normalizes and correlates events |
@@ -122,9 +124,11 @@ Kali is intentionally treated as the origin of the activity, not as a monitored 
 
 | Scenario | Source | Target | Main Technique | Main Telemetry |
 |---|---|---|---|---|
-| RDP lateral movement | Kali-ATK01 | WS01 | `T1021.001` | `4624`, `4688`, Wazuh `92653`, `100001`, `67027`, `92052` |
-| SMB/PsExec-like execution | Kali-ATK01 | DC01 | `T1021.002` | `4624`, `4672`, `5145`, `7045`, Wazuh `100011`, `100021`, `100010`, `92218`, `92307`, `92650` |
-| Pass-the-Hash / DCSync correlation | Kali-ATK01 | DC01 | `T1550.002`, related `T1003.006` | `4624`, `4672`, `4662`, `7045`, Wazuh `100011`, `100021`, `100030`, `100033`, `92650`, `92052` |
+| RDP lateral movement | `Kali-ATK01` | `WS01` | `T1021.001` | `4624`, `4688`, rules `92653`, `100001`, `67027`, `92052` |
+| SMB / PsExec-like execution | `Kali-ATK01` | `DC01` | `T1021.002`, `T1569.002` | `4624`, `4672`, `5145`, `7045`, related Wazuh rules |
+| Pass-the-Hash / DCSync | `Kali-ATK01` | `DC01` | `T1550.002`, `T1003.006` | `4624`, `4672`, `4662`, rules `100030`, `100033` |
+| Kerberoasting | `Kali-ATK01` | `DC01` | `T1558.003` | `4769`, rules `100040`, `100041`, optional `100042` |
+| AS-REP Roasting | `Kali-ATK01` | `DC01` | `T1558.004` | `4768`, rules `100050`, `100051`, `100052` |
 
 ## 7. Design Limitations
 
