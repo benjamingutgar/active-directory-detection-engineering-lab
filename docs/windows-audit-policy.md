@@ -6,7 +6,7 @@ The detections in this repository depend on Windows telemetry. If the required a
 
 ## 1. Purpose
 
-The goal of this configuration is to enable the Windows Security events required for the four simulated scenarios:
+The goal of this configuration is to enable the Windows Security events required for the five simulated scenarios:
 
 | Scenario | Technique | Required Events |
 |---|---|---|
@@ -14,10 +14,13 @@ The goal of this configuration is to enable the Windows Security events required
 | SMB/PsExec-like execution | `T1021.002`, `T1569.002` | `4624`, `4672`, `5145`, `7045`, `4688` |
 | Pass-the-Hash / DCSync correlation | `T1550.002`, `T1003.006` | `4624`, `4672`, `4662`, `7045`, `4688` |
 | Kerberoasting | `T1558.003` | `4769`, optional Sysmon Event ID `3` |
+| AS-REP Roasting | `T1558.004` | `4768` |
 
 Kerberoasting extends the project from lateral movement into credential access.
 
 Its main Windows telemetry is generated on `DC01`, because the Domain Controller hosts the Kerberos Key Distribution Center and processes service-ticket requests.
+
+AS-REP Roasting also relies on Domain Controller Kerberos telemetry, specifically Event ID `4768` for TGT requests processed by the KDC.
 
 ---
 
@@ -37,6 +40,7 @@ On `DC01`, also enable Kerberos service-ticket auditing:
 
 ```powershell
 auditpol /set /subcategory:"Kerberos Service Ticket Operations" /success:enable /failure:enable
+auditpol /set /subcategory:"Kerberos Authentication Service" /success:enable /failure:enable
 ```
 
 The DCSync-related scenario additionally requires Directory Service Access auditing and an appropriate System Access Control List on the Active Directory object being monitored.
@@ -53,6 +57,7 @@ The DCSync-related scenario additionally requires Directory Service Access audit
 | `File Share` | `5140` and related share activity | Useful for general share-access visibility. |
 | `Detailed File Share` | `5145` | Required to observe detailed access to administrative shares such as `ADMIN$`, `C$` or `IPC$`. |
 | `Kerberos Service Ticket Operations` | `4769` | Required to observe Kerberos service-ticket requests processed by the Domain Controller. This is the principal event for hypotheses H8 and H9. |
+| `Kerberos Authentication Service` | `4768` | Required to observe TGT requests processed by the KDC. This is the principal telemetry for hypotheses H11, H12 and H13. |
 | `Directory Service Access` | `4662` | Required for DCSync-like visibility when the appropriate Active Directory auditing configuration is present. |
 
 <details>
@@ -190,7 +195,73 @@ Detection rules and analyst searches must account for both representations.
 
 ---
 
-## 6. Directory Service Access for DCSync Visibility
+## 6. Kerberos Authentication Service Auditing
+
+AS-REP Roasting detection depends on Windows Security Event ID `4768`.
+
+On `DC01`, enable:
+
+```powershell
+auditpol.exe `
+    /set `
+    /subcategory:"Kerberos Authentication Service" `
+    /success:enable `
+    /failure:enable
+```
+
+Verify the configuration:
+
+```powershell
+auditpol.exe `
+    /get `
+    /subcategory:"Kerberos Authentication Service"
+```
+
+The relevant event is:
+
+```text
+4768 — A Kerberos authentication ticket (TGT) was requested
+```
+
+### Relevant Event ID 4768 Fields
+
+| Field | Detection Use |
+|---|---|
+| `targetUserName` | Identifies the account for which the TGT was requested |
+| `targetDomainName` | Identifies the Active Directory domain |
+| `serviceName` | Expected `krbtgt` service |
+| `preAuthType` | Value `0` identifies the observed no-pre-authentication request |
+| `status` | Value `0x0` identifies a successful request |
+| `ticketEncryptionType` | Value `0x17` provides RC4-HMAC context |
+| `ticketOptions` | Preserves Kerberos request options |
+| `ipAddress` | Identifies the source; may use IPv4-mapped IPv6 form |
+| `ipPort` | Client ephemeral port |
+| `systemTime` | Native Windows event time |
+| `eventRecordID` | Allows the original Windows record to be traced |
+
+The validated AS-REP chain is:
+
+```text
+4768
+  ↓
+preAuthType = 0
+  ↓
+status = 0x0
+  ↓
+100050
+  ↓
+ticketEncryptionType = 0x17
+  ↓
+100051
+  ↓
+frequency correlation
+  ↓
+100052
+```
+
+The supplied evidence confirms that Event ID `4768` was generated and collected. It does not preserve the exact audit-policy command originally used during each validation date.
+
+## 7. Directory Service Access for DCSync Visibility
 
 The Pass-the-Hash / DCSync scenario relies on Event ID `4662`.
 
@@ -228,7 +299,7 @@ and replication-related GUIDs such as:
 
 ---
 
-## 7. Remote Administration Support on DC01
+## 8. Remote Administration Support on DC01
 
 The SMB/PsExec-like and Pass-the-Hash scenarios require remote administrative behavior against `DC01`.
 
@@ -254,7 +325,7 @@ Only the services required by the isolated laboratory should be exposed.
 
 ---
 
-## 8. Local Account Token Filter Policy
+## 9. Local Account Token Filter Policy
 
 When local administrative accounts are used in a controlled laboratory, remote administration can be affected by User Account Control remote restrictions.
 
@@ -284,7 +355,7 @@ This configuration is not required for the main Kerberoasting ticket-request det
 
 ---
 
-## 9. Wazuh Event-Channel Collection
+## 10. Wazuh Event-Channel Collection
 
 The Wazuh agent must collect the Windows Security channel.
 
@@ -331,7 +402,7 @@ For optional Sysmon telemetry, the agent must collect:
 
 ---
 
-## 10. Optional Sysmon Network Telemetry
+## 11. Optional Sysmon Network Telemetry
 
 Hypothesis H10 and rule `100042` depend on Sysmon Event ID `3`.
 
@@ -374,7 +445,7 @@ For this reason, rule `100042` is complementary and environment-dependent.
 
 ---
 
-## 11. Restarting the Wazuh Agent
+## 12. Restarting the Wazuh Agent
 
 After changing telemetry configuration, restart the Wazuh agent:
 
@@ -397,7 +468,7 @@ Running
 
 ---
 
-## 12. Validation Commands
+## 13. Validation Commands
 
 Use these commands to verify the audit policy:
 
@@ -409,6 +480,7 @@ auditpol /get /subcategory:"File Share"
 auditpol /get /subcategory:"Detailed File Share"
 auditpol /get /subcategory:"Directory Service Access"
 auditpol /get /subcategory:"Kerberos Service Ticket Operations"
+auditpol /get /subcategory:"Kerberos Authentication Service"
 ```
 
 Check recent Security events:
@@ -466,6 +538,19 @@ Select-Object `
 Format-List
 ```
 
+For AS-REP TGT requests:
+
+```powershell
+Get-WinEvent `
+    -FilterHashtable @{
+        LogName = 'Security'
+        Id = 4768
+        StartTime = (Get-Date).AddMinutes(-30)
+    } |
+Select-Object TimeCreated,RecordId,Message |
+Format-List
+```
+
 To filter the controlled Kerberoasting scenario without exposing credentials:
 
 ```powershell
@@ -491,7 +576,7 @@ Do not publish the private account password or the complete exported Kerberos ti
 
 ---
 
-## 13. Detection Dependency Matrix
+## 14. Detection Dependency Matrix
 
 | Detection Hypothesis | Required Audit Configuration | Main Event |
 |---|---|---|
@@ -505,10 +590,13 @@ Do not publish the private account password or the complete exported Kerberos ti
 | H8 — RC4 service-ticket request from unexpected source | `Kerberos Service Ticket Operations` | `4769` |
 | H9 — Repeated suspicious RC4 ticket requests | `Kerberos Service Ticket Operations` + Wazuh frequency correlation | `4769`, rules `100040` and `100041` |
 | H10 — Unusual process connecting to Kerberos | Sysmon network connections + Sysmon channel collection | Sysmon Event ID `3` |
+| H11 — Successful TGT request without pre-authentication | `Kerberos Authentication Service` | `4768`, rule `100050` |
+| H12 — RC4-HMAC AS-REP context | `Kerberos Authentication Service` | `4768`, rule `100051` |
+| H13 — Repeated AS-REP requests | `Kerberos Authentication Service` + Wazuh frequency correlation | `4768`, rule `100052` |
 
 ---
 
-## 14. Scenario Telemetry Summary
+## 15. Scenario Telemetry Summary
 
 ### RDP
 
@@ -574,7 +662,27 @@ process other than lsass.exe
 
 ---
 
-## 15. Detection Limitations
+### AS-REP Roasting
+
+```text
+4768
+  ↓
+preAuthType = 0
+  ↓
+status = 0x0
+  ↓
+100050
+  ↓
+ticketEncryptionType = 0x17
+  ↓
+100051
+  ↓
+three qualifying requests from one source
+  ↓
+100052
+```
+
+## 16. Detection Limitations
 
 Enabling an audit category does not automatically make a detection conclusive.
 
@@ -586,6 +694,7 @@ Examples:
 - Event ID `7045` does not prove PsExec.
 - Event ID `4662` requires interpretation of the requested rights and account context.
 - Event ID `4769` does not prove Kerberoasting.
+- Event ID `4768` with `preAuthType=0` does not prove that offline password recovery succeeded.
 - Sysmon Event ID `3` does not prove malicious network activity.
 
 The analyst must combine:
@@ -612,7 +721,7 @@ It cannot directly observe each offline password candidate tested after the tick
 
 ---
 
-## 16. Key Takeaway
+## 17. Key Takeaway
 
 A SIEM does not create telemetry by itself.
 
@@ -628,6 +737,16 @@ no Event ID 4769
 no visibility into the TGS request
         ↓
 rules 100040 and 100041 cannot operate
+```
+
+The AS-REP Roasting extension follows the same telemetry-first model:
+
+```text
+no Event ID 4768
+        ↓
+no visibility into the TGT request
+        ↓
+rules 100050, 100051 and 100052 cannot operate
 ```
 
 Correct telemetry configuration is the foundation of every detection in the repository.
