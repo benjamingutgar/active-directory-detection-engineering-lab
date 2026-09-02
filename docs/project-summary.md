@@ -41,7 +41,7 @@ Passwords, complete Kerberos tickets, reusable hashes, Wazuh agent keys and othe
 
 ## Detection Scenarios
 
-The project covers four controlled scenarios.
+The project covers five controlled scenarios.
 
 ### 1. RDP Lateral Movement
 
@@ -287,9 +287,58 @@ Full write-up:
 
 ---
 
+### 5. AS-REP Roasting
+
+Technique:
+
+```text
+T1558.004 — AS-REP Roasting
+```
+
+The scenario validates whether Wazuh can detect a successful Kerberos TGT request for an account that does not require pre-authentication.
+
+Main telemetry:
+
+```text
+Windows Security Event ID 4768
+```
+
+Relevant observed fields:
+
+```text
+targetUserName = svc_asrep_lab
+serviceName = krbtgt
+preAuthType = 0
+status = 0x0
+ticketEncryptionType = 0x17
+ipAddress = ::ffff:192.168.56.40
+```
+
+Detection chain:
+
+```text
+4768
+  ↓
+100050
+  ↓
+100051
+  ↓
+100052
+```
+
+Direct alert evidence exists for all three custom rules. The evidence was collected across 18 and 28 August 2026 rather than one single continuous run.
+
+Wazuh observes the Kerberos request and correlation context. It does not observe or prove successful offline password recovery.
+
+Full write-up:
+
+- [`../detections/T1558.004-as-rep-roasting.md`](../detections/T1558.004-as-rep-roasting.md)
+
+---
+
 ## Detection Hypotheses
 
-The project is organized around ten detection hypotheses.
+The project is organized around thirteen detection hypotheses.
 
 | Hypothesis | Scenario | Main Purpose |
 |---|---|---|
@@ -303,6 +352,9 @@ The project is organized around ten detection hypotheses.
 | `H8` | Kerberoasting | Detect an RC4 service-ticket request from an unexpected source |
 | `H9` | Kerberoasting | Correlate repeated suspicious RC4 ticket requests |
 | `H10` | Kerberoasting | Add optional process-level Kerberos context |
+| `H11` | AS-REP Roasting | Detect a successful TGT request without Kerberos pre-authentication |
+| `H12` | AS-REP Roasting | Add RC4-HMAC context to the no-pre-authentication request |
+| `H13` | AS-REP Roasting | Correlate three qualifying requests from one source within 60 seconds |
 
 Full hypothesis documentation:
 
@@ -322,6 +374,7 @@ The project relies primarily on the following Windows events:
 | `4662` | Directory Service access and DCSync-related evidence |
 | `4672` | Special privileges assigned to a new logon |
 | `4688` | Process creation |
+| `4768` | Kerberos authentication ticket or TGT request used by AS-REP Roasting detection |
 | `4769` | Kerberos service-ticket request |
 | `5145` | Detailed network-share access |
 | `7045` | New Windows service installed |
@@ -354,6 +407,9 @@ The main custom rules are:
 | `100040` | RC4 Kerberos service-ticket request from an unexpected source |
 | `100041` | Three suspicious RC4 ticket requests from the same source |
 | `100042` | Unusual process connecting to the Kerberos service |
+| `100050` | Successful TGT request without Kerberos pre-authentication |
+| `100051` | AS-REP request using RC4-HMAC |
+| `100052` | Three qualifying AS-REP requests from one source in 60 seconds |
 
 Rule files:
 
@@ -364,7 +420,7 @@ Rule files:
 
 ## Correlation Logic
 
-The project contains two principal custom correlations.
+The project contains three principal custom correlations.
 
 ### Pass-the-Hash / DCSync
 
@@ -402,6 +458,32 @@ same_field = source IP address
 
 ---
 
+### AS-REP Roasting
+
+```text
+successful Event ID 4768
+        ↓
+preAuthType = 0
+        ↓
+rule 100050
+        ↓
+ticketEncryptionType = 0x17
+        ↓
+rule 100051
+        ↓
+three qualifying requests from one source
+        ↓
+rule 100052
+```
+
+Correlation parameters:
+
+```text
+frequency = 3
+timeframe = 60 seconds
+same_field = source IP address
+```
+
 ## Evidence Model
 
 Each scenario includes defensive evidence such as:
@@ -422,6 +504,7 @@ evidence/rdp/
 evidence/smb-psexec-like/
 evidence/pass-the-hash/
 evidence/kerberoasting/
+evidence/as-rep-roasting/
 ```
 
 Sensitive information is excluded from the public repository.
@@ -436,6 +519,14 @@ For Kerberoasting, this includes:
 - private wordlists;
 - recovered passwords;
 - reusable credential material.
+
+For AS-REP Roasting, this additionally includes:
+
+- complete `$krb5asrep$` output;
+- passwords and recovered passwords;
+- reusable Kerberos material;
+- credential-output files;
+- dictionaries and potfiles.
 
 ---
 
@@ -467,6 +558,14 @@ Event ID 4769 using RC4
 
 does not directly prove successful Kerberoasting or password recovery.
 
+Likewise:
+
+```text
+Event ID 4768 with preAuthType = 0
+```
+
+does not directly prove successful AS-REP password recovery.
+
 The correct interpretation is:
 
 ```text
@@ -483,9 +582,10 @@ The laboratory demonstrated that:
 2. SMB/PsExec-like execution can be identified through NTLM authentication, privileges, administrative shares and service creation.
 3. Pass-the-Hash cannot be proven through a single NTLM event, but confidence increases through DCSync and privileged-access correlation.
 4. Kerberoasting can be detected at the service-ticket request stage through Event ID `4769`, RC4 context, source analysis and frequency correlation.
-5. Offline Kerberoasting password testing remains outside the direct visibility of the Domain Controller.
-6. Detection quality depends on telemetry configuration, field parsing and correlation design.
-7. Laboratory detections require baselining and tuning before production use.
+5. AS-REP Roasting can be detected at the TGT-request stage through Event ID `4768`, pre-authentication type, result status, encryption context and source-frequency correlation.
+6. Offline password testing or recovery remains outside the direct visibility of the Domain Controller for the Kerberoasting and AS-REP Roasting scenarios.
+7. Detection quality depends on telemetry configuration, field parsing and correlation design.
+8. Laboratory detections require baselining and tuning before production use.
 
 ---
 
@@ -526,6 +626,7 @@ A production implementation should add:
 - environment-specific allowlists;
 - normal source and account baselines;
 - service-account and SPN inventories;
+- inventory of accounts without Kerberos pre-authentication;
 - RC4 dependency analysis;
 - distinct-SPN counting;
 - privileged service-account prioritization;
@@ -579,7 +680,7 @@ This structure makes the repository useful as:
 
 The project demonstrates that a lightweight local Wazuh deployment can provide useful visibility into controlled Active Directory attack behavior.
 
-The four scenarios cover different detection challenges:
+The five scenarios cover different detection challenges:
 
 ```text
 RDP:
@@ -593,6 +694,9 @@ the authentication material is hidden, but its surrounding effects can be correl
 
 Kerberoasting:
 the ticket request is observable, while offline password testing remains outside SIEM visibility
+
+AS-REP Roasting:
+the no-pre-authentication TGT request is observable, while offline password recovery remains outside SIEM visibility
 ```
 
 The principal lesson is that detection engineering requires more than generating alerts.
