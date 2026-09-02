@@ -4,12 +4,13 @@ This document explains the custom Wazuh rules developed for the Active Directory
 
 The rules enrich native Wazuh detections with project-specific context, MITRE ATT&CK mapping and correlation logic.
 
-They cover four controlled scenarios:
+They cover five controlled scenarios:
 
 - RDP-based lateral movement.
 - SMB / PsExec-like remote execution.
 - Pass-the-Hash activity with DCSync-related evidence.
 - Kerberoasting activity against a controlled service account.
+- AS-REP Roasting.
 
 The full XML rule file is available at:
 
@@ -19,13 +20,21 @@ wazuh/rules/local_rules.xml
 
 ---
 
-## Rule 100001 — RDP Session Context
+## Rule 100001 — Post-Access Process Execution after RDP Session
 
-Rule `100001` contextualizes RDP activity associated with the observed laboratory user.
+Rule `100001` detects process creation associated with the controlled RDP scenario after the native process-creation rule has matched.
 
-The initial RDP access is covered by the native Wazuh rule `92653`. Rule `100001` extends this detection chain by filtering the authenticated user involved in the RDP session.
+The initial RDP access is covered separately by native Wazuh rule `92653`. Rule `100001` is a child of rule `67027`, not of the RDP logon alert itself.
 
-The `if_sid` dependency ensures that this rule only fires when the native RDP-related rule has already matched.
+### Detection logic
+
+```text
+native process-creation rule 67027
++
+target laboratory user
+=
+rule 100001
+```
 
 This rule is mapped to:
 
@@ -35,21 +44,31 @@ T1021.001 — Remote Services: Remote Desktop Protocol
 
 ### Detection value
 
-This rule helps isolate RDP activity that belongs to the controlled lateral movement scenario and separates it from generic RDP-related noise.
+The rule adds post-access context after the RDP session by identifying process execution associated with the controlled laboratory user.
+
+The relevant chain is:
+
+```text
+RDP access detected by rule 92653
+        ↓
+process creation detected by rule 67027
+        ↓
+rule 100001 adds controlled-scenario context
+```
 
 ### Main fields
 
 | Field | Purpose |
 |---|---|
-| `if_sid` | Requires native rule `92653` to have fired |
+| `if_sid` | Requires native process-creation rule `67027` |
 | `win.eventdata.targetUserName` | Filters the observed laboratory user |
 | `mitre.id` | Maps the alert to `T1021.001` |
 
 ### Limitations
 
-RDP is a legitimate administration protocol.
+Process execution after an RDP session is not inherently malicious.
 
-The rule provides laboratory context but does not prove malicious intent by itself.
+The rule provides laboratory context and must be interpreted together with the preceding RDP access and the executed process.
 
 In the public repository, the real username is replaced with a placeholder such as:
 
@@ -716,11 +735,145 @@ rule 100041
 
 ---
 
+## Rule 100050 — Successful TGT Request without Pre-Authentication
+
+Rule `100050` detects a successful Kerberos TGT request without pre-authentication for an account that is neither `krbtgt` nor a machine account.
+
+### Detection logic
+
+```text
+native rule 60103
++
+Event ID 4768
++
+preAuthType = 0
++
+target account is not krbtgt
++
+target account does not end in $
+=
+rule 100050
+```
+
+### Main fields
+
+| Field | Purpose |
+|---|---|
+| `win.system.eventID` | Requires Event ID `4768` |
+| `win.eventdata.preAuthType` | Requires value `0` |
+| `win.eventdata.targetUserName` | Excludes `krbtgt` and machine accounts |
+| `win.eventdata.status` | Observed value `0x0` confirms success in the evidence |
+| `win.eventdata.ipAddress` | Identifies the source |
+
+### Detection value
+
+The rule identifies the main Domain Controller signal associated with the controlled AS-REP Roasting scenario.
+
+A standalone alert for native rule `60103` was not supplied. It is documented as a rule-chain dependency, not as an independently preserved alert.
+
+### Limitation
+
+A known legacy account may intentionally have Kerberos pre-authentication disabled. The analyst must validate the account configuration and source.
+
+---
+
+## Rule 100051 — AS-REP Request Using RC4-HMAC
+
+Rule `100051` is a child of rule `100050`.
+
+### Detection logic
+
+```text
+rule 100050
++
+ticketEncryptionType = 0x17
+=
+rule 100051
+```
+
+### Main fields
+
+| Field | Purpose |
+|---|---|
+| `if_sid` | Requires rule `100050` |
+| `win.eventdata.ticketEncryptionType` | Requires RC4-HMAC value `0x17` |
+| `rule.level` | Raises the alert to level `13` |
+
+### Validation
+
+Direct evidence was preserved from 18 August 2026:
+
+```text
+eventRecordID = 136332
+event time = 2026-08-18T01:28:22.2865658Z
+alert time = 2026-08-18T01:33:59.401Z
+```
+
+The observable event-to-alert timestamp difference was `337.114 seconds`. The available evidence does not explain the delay.
+
+`firedtimes=4` is a Wazuh counter and is not treated as four separately documented executions.
+
+---
+
+## Rule 100052 — Repeated RC4 AS-REP Requests
+
+Rule `100052` correlates three rule `100051` matches from the same source within 60 seconds.
+
+### Detection logic
+
+```text
+three matches of rule 100051
++
+same win.eventdata.ipAddress
++
+within 60 seconds
+=
+rule 100052
+```
+
+### Main fields
+
+| Field | Value |
+|---|---|
+| `if_matched_sid` | `100051` |
+| `frequency` | `3` |
+| `timeframe` | `60` seconds |
+| `same_field` | `win.eventdata.ipAddress` |
+| `rule.level` | `14` |
+
+### Validation
+
+The preserved correlation events were:
+
+| Event record | UTC timestamp |
+|---:|---|
+| `139034` | `2026-08-28T20:08:11.6139542Z` |
+| `139064` | `2026-08-28T20:08:27.5104550Z` |
+| `139070` | `2026-08-28T20:08:31.0812711Z` |
+
+The first-to-third interval was `19.467 seconds`.
+
+The stored alert description differs from the current XML description:
+
+```text
+Stored alert:
+TFM - Multiple AS-REP requests without pre-authentication from the same source (T1558.004)
+
+Current XML:
+TFM - Multiple RC4 AS-REP requests without pre-authentication from the same source (T1558.004)
+```
+
+This difference should remain documented because the exact XML revision active during the stored alert was not preserved.
+
+### Detection boundary
+
+Rule `100052` proves repeated qualifying requests from one source. It does not prove that offline password recovery succeeded.
+
 ## Summary Matrix
 
 | Rule ID | Main Purpose | Technique Mapping | Scenario |
 |---:|---|---|---|
-| `100001` | RDP session context | `T1021.001` | RDP |
+| `100001` | Post-access process execution after the RDP session | `T1021.001` | RDP |
 | `100010` | Remote service creation | `T1021.002`, `T1569.002` | SMB / PsExec-like |
 | `100011` | NTLM network logon | `T1021.002`, `T1550.002` | SMB / Pass-the-Hash |
 | `100021` | Privileged user session | `T1078`, `T1550.002` | SMB / Pass-the-Hash |
@@ -730,6 +883,9 @@ rule 100041
 | `100040` | RC4 TGS request from an unexpected source | `T1558.003` | Kerberoasting |
 | `100041` | Three suspicious RC4 TGS requests from the same source | `T1558.003` | Critical Kerberoasting correlation |
 | `100042` | Unusual process connecting to Kerberos | `T1558.003` | Kerberoasting supporting context |
+| `100050` | Successful TGT request without pre-authentication | `T1558.004` | AS-REP Roasting |
+| `100051` | RC4-HMAC context for no-pre-authentication TGT request | `T1558.004` | AS-REP Roasting |
+| `100052` | Three qualifying AS-REP requests from the same source | `T1558.004` | AS-REP Roasting correlation |
 
 ---
 
@@ -796,6 +952,24 @@ rule 100042
 ```
 
 ---
+
+### AS-REP Roasting
+
+```text
+Windows Event ID 4768
+        ↓
+preAuthType = 0
+        ↓
+rule 100050
+        ↓
+ticketEncryptionType = 0x17
+        ↓
+rule 100051
+        ↓
+three matches from the same source in 60 seconds
+        ↓
+rule 100052
+```
 
 ## Detection Boundaries
 
@@ -864,6 +1038,24 @@ direct proof that the hidden password or hash was used or recovered
 ```
 
 ---
+
+### AS-REP Roasting
+
+Wazuh observes:
+
+```text
+TGT request
++
+pre-authentication type
++
+result status
++
+encryption type
++
+source and frequency
+```
+
+Wazuh does not observe every offline password candidate or prove that the account password was recovered.
 
 ## Key Takeaway
 
