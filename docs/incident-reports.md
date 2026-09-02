@@ -637,6 +637,114 @@ the hash is hidden, but surrounding behavior can be correlated
 
 Kerberoasting:
 the ticket request is observable, while offline password testing is hidden
+
+## 6. Report — AS-REP Roasting-Compatible Activity
+
+### Classification
+
+| Field | Value |
+|---|---|
+| Scenario | AS-REP Roasting |
+| MITRE ATT&CK | `T1558.004` |
+| Tactic | Credential Access |
+| Source | `Kali-ATK01 / 192.168.56.40` |
+| Target | `DC01 / 192.168.56.20` |
+| Target account | `svc_asrep_lab` |
+| Main event | `4768` |
+| Native-rule dependency | `60103` |
+| Custom rules | `100050`, `100051`, `100052` |
+| Maximum observed rule level | `14` |
+
+### Observed Weakness
+
+The controlled account accepted a Kerberos TGT request without pre-authentication.
+
+The supplied evidence contains:
+
+```text
+preAuthType = 0
+status = 0x0
+serviceName = krbtgt
+ticketEncryptionType = 0x17
+```
+
+The evidence does not preserve the account-creation command or the exact procedure used to configure the account.
+
+### Main Evidence
+
+- successful Event ID `4768` on `DC01`;
+- target account `svc_asrep_lab`;
+- source `::ffff:192.168.56.40`;
+- `preAuthType=0`;
+- `status=0x0`;
+- `ticketEncryptionType=0x17`;
+- direct alerts for rules `100050`, `100051` and `100052`;
+- three preserved correlation events inside `19.467 seconds`;
+- two correlation alerts in the 28 August CSV.
+
+### Detection Chain
+
+```text
+TGT request
+   ↓
+Event ID 4768
+   ↓
+preAuthType = 0
+   ↓
+status = 0x0
+   ↓
+rule 100050
+   ↓
+ticketEncryptionType = 0x17
+   ↓
+rule 100051
+   ↓
+three qualifying requests from one source
+   ↓
+rule 100052
+```
+
+### Severity Interpretation
+
+Rule `100050` is an initial high-value configuration signal.
+
+Rule `100051` adds RC4-HMAC context.
+
+Rule `100052` adds repeated behavior from the same source and is the strongest AS-REP alert in this laboratory.
+
+The alerts do not prove that offline password recovery succeeded.
+
+### Potential False Positives
+
+Possible legitimate explanations include:
+
+- a known legacy account configured without pre-authentication;
+- an authorized security assessment;
+- an account-configuration audit;
+- repeated requests from a shared administration or translated source address.
+
+### Defensive Response
+
+1. Confirm whether the account is intentionally exempt from Kerberos pre-authentication.
+2. Validate the source address and host ownership.
+3. Review the account privilege level and recent use.
+4. Review other Event ID `4768` records for the same account or source.
+5. Restore Kerberos pre-authentication when the exemption is not required.
+6. Rotate the account password if compromise is suspected.
+7. Monitor subsequent authentication by the account.
+8. Preserve the relevant Windows and Wazuh timestamps.
+
+### Evidence Boundary
+
+The three custom rules were validated across two dates.
+
+The supplied evidence does not include:
+
+- a standalone native-rule `60103` alert;
+- the exact XML revision active for the 28 August `100052` alert;
+- account cleanup evidence;
+- proof of offline password recovery;
+- a one-to-one mapping for all visible command executions.
 ```
 
 This distinction should remain explicit in every incident conclusion.
