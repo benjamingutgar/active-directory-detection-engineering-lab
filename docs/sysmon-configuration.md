@@ -94,9 +94,13 @@ In this lab, Sysmon should be understood as complementary telemetry. The detecti
 
 | Scenario | Sysmon Value |
 |---|---|
-| RDP | Helps validate post-access commands after remote session establishment |
-| SMB/PsExec-like | Helps review process execution caused by remote service activity |
-| Pass-the-Hash | Provides additional endpoint context, but the strongest evidence comes from NTLM logon, privileges and DCSync-like activity |
+| RDP | Helps validate post-access process execution after the remote session |
+| SMB / PsExec-like | Helps review processes created by remote service activity |
+| Pass-the-Hash | Provides additional endpoint context; the main chain uses Windows Security telemetry |
+| Kerberoasting | Optional Sysmon Event ID `3` context when a monitored Windows process connects to `DC01:88` |
+| AS-REP Roasting | No Sysmon event was supplied or required; the validated detection uses Event ID `4768` on `DC01` |
+
+AS-REP Roasting must not be represented as a Sysmon-based detection in this repository.
 
 ## 9. Operational Notes
 
