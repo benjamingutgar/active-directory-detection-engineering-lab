@@ -114,7 +114,27 @@ agent.name:DC01 AND data.win.system.channel:"Microsoft-Windows-Sysmon/Operationa
 | No Sysmon events locally | Sysmon not installed or not running | `Get-Service Sysmon*` |
 | Events appear from one host but not another | Agent configuration differs between hosts | Compare `ossec.conf` on DC01 and WS01 |
 
-## 9. Key Takeaway
+## 9. Scenario Scope
+
+Sysmon collection is complementary and is not required equally by every scenario.
+
+| Scenario | Sysmon Dependency |
+|---|---|
+| RDP | Useful for process context |
+| SMB / PsExec-like | Useful for process context |
+| Pass-the-Hash / DCSync | Supporting telemetry only |
+| Kerberoasting | Optional for rule `100042` |
+| AS-REP Roasting | Not required by the validated `4768` detection chain |
+
+The AS-REP Roasting rules operate on the Windows Security channel:
+
+```text
+Security → Event ID 4768 → rules 100050, 100051 and 100052
+```
+
+They do not depend on `Microsoft-Windows-Sysmon/Operational`.
+
+## 10. Key Takeaway
 
 Sysmon collection requires three things:
 
