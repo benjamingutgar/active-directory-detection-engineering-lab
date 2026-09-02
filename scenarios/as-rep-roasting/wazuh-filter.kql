@@ -1,1 +1,1 @@
-rule.id:100050 OR rule.id:100051 OR rule.id:100052 OR (agent.name:DC01 AND data.win.system.eventID:4768 AND data.win.eventdata.preAuthType:0)
+agent.name:DC01 AND (rule.id:(100050 OR 100051 OR 100052) OR (data.win.system.eventID:4768 AND data.win.eventdata.preAuthType:0))
