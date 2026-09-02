@@ -9,12 +9,13 @@ The order matters because several components depend on previous steps:
 - Windows and Sysmon telemetry must be enabled before executing the scenarios;
 - Kerberos auditing and the controlled service account must be prepared before running Kerberoasting.
 
-The laboratory currently supports four controlled scenarios:
+The laboratory currently supports five controlled scenarios:
 
 - RDP lateral movement;
 - SMB / PsExec-like remote execution;
 - Pass-the-Hash with DCSync-related evidence;
 - Kerberoasting.
+- AS-REP Roasting.
 
 ---
 
@@ -629,7 +630,7 @@ Rule `100042` is optional supporting coverage and requires Sysmon network teleme
 
 ## 9. Recommended Validation Checklist
 
-Before running the four scenarios, confirm:
+Before running the five scenarios, confirm:
 
 | Check | Expected Result |
 |---|---|
@@ -721,9 +722,10 @@ Once deployment and validation are complete, execute the scenarios in this order
 2. SMB / PsExec-like
 3. Pass-the-Hash / DCSync
 4. Kerberoasting
+5. AS-REP Roasting
 ```
 
-This order follows the original project progression and then adds the credential-access extension.
+This order follows the original project progression and then adds the credential-access extensions.
 
 Kerberoasting can also be executed independently after:
 
@@ -780,3 +782,86 @@ sanitized evidence
 ```
 
 Correct deployment order prevents missing telemetry and makes the resulting alerts reproducible and trustworthy.
+
+---
+
+## 13. AS-REP Roasting Deployment Extension
+
+### Required Components
+
+| Component | Requirement |
+|---|---|
+| Source | `Kali-ATK01 / 192.168.56.40` |
+| Kerberos infrastructure | `DC01 / 192.168.56.20` |
+| Domain | `lab.local` |
+| Controlled account | `svc_asrep_lab` |
+| Windows event | `4768` |
+| Security channel | Collected by the Wazuh agent on `DC01` |
+| Custom rules | `100050`, `100051`, `100052` |
+
+### Audit Requirement
+
+The relevant audit subcategory is:
+
+```text
+Kerberos Authentication Service
+```
+
+The supplied event evidence confirms that Event ID `4768` was generated. The original enablement command used during each validation date was not preserved.
+
+### Wazuh Validation
+
+Use:
+
+```kql
+agent.name:DC01 AND (rule.id:(100050 OR 100051 OR 100052) OR (data.win.system.eventID:4768 AND data.win.eventdata.preAuthType:0))
+```
+
+The XML rule chain is:
+
+```text
+native Windows rule 60103
+        ↓
+100050
+        ↓
+100051
+        ↓
+100052
+```
+
+The public evidence does not include a standalone alert for native rule `60103`.
+
+### Evidence Preservation
+
+Preserve:
+
+```text
+evidence/as-rep-roasting/as-rep-roasting-attack-summary.csv
+evidence/as-rep-roasting/json/alert-100050-as-rep-no-preauth.json
+evidence/as-rep-roasting/json/alert-100051-as-rep-rc4.json
+evidence/as-rep-roasting/json/alert-100052-as-rep-correlation.json
+scenarios/as-rep-roasting/execution.md
+scenarios/as-rep-roasting/timeline.md
+scenarios/as-rep-roasting/wazuh-filter.kql
+```
+
+Do not commit:
+
+```text
+*.hash
+*.pot
+*.potfile
+complete AS-REP strings
+passwords
+recovered passwords
+complete SIDs
+raw Wazuh full_log fields
+```
+
+### Validation Boundary
+
+Rules `100050`, `100051` and `100052` have direct alert evidence, but the evidence was collected on two dates.
+
+The repository must not describe the three stored alert documents as one continuous command execution.
+
+The description of the stored `100052` alert also differs from the current XML wording, indicating a rule-revision difference.
